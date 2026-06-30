@@ -1,0 +1,19 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+
+# Ignore data and models content, but keep structure
+data/raw/*
+!data/raw/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+data/external/*
+!data/external/.gitkeep
+
+models/*
+!models/.gitkeep
