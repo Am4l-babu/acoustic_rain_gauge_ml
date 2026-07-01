@@ -1,0 +1,280 @@
+================================================================================
+ACOUSTIC RAINFALL DATASET ANALYSIS REPORT - VERSION 2
+(With Recursive Subdirectory Search)
+Generated: 2026-07-01 12:51:08
+Source: F:\arg_dataset_unzip
+================================================================================
+
+OVERALL DATASET SUMMARY (RECURSIVE SEARCH)
+--------------------------------------------------------------------------------
+Total folders analyzed: 31
+Total audio files found: 780,726
+Total video files found: 0
+Total data files found:  33
+Estimated total size:    0.10 GB
+
+AUDIO DURATION ANALYSIS
+--------------------------------------------------------------------------------
+Average duration: 9.59 seconds
+Duration range:   3.00s - 10.00s
+
+DETAILED FOLDER BREAKDOWN
+--------------------------------------------------------------------------------
+
+Aligned_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  15 files
+  Subdirs: 2
+  Subdir names: cleaned csv files, pickle files
+  Mech columns: ['timestamp', 'rainfall_mm']
+
+April_2024_rainfall_audios_with_mech_data:
+  Audio: 15135 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 9
+  Subdir names: 2024_04_11, 2024_04_12, 2024_04_13, 2024_04_14, 2024_04_15...
+  Mech columns: ['Time', 'device_frmpayload_data_rainfall']
+  Duration dist: {'10-15s': 20}
+
+August_2025_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+August_2025_Rain_Data:
+  Audio: 19807 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 3
+  Subdir names: August_02_2025, August_03_2025, August_04_2025
+  Duration dist: {'10-15s': 20}
+
+December_2023_rainfall_audios_with_mech_data:
+  Audio: 18160 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 5
+  Subdir names: 2023_12_02, 2023_12_08, 2023_12_16, 2023_12_17, 2023_12_18
+  Mech columns: ['Time', 'device_frmpayload_data_rainfall']
+  Duration dist: {'10-15s': 20}
+
+December_2024_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'rainfall', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+December_2024_rain_data:
+  Audio: 178600 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 21
+  Subdir names: December_06_2024, December_07_2024, December_08_2024, December_10_2024, December_11_2024...
+  Duration dist: {'10-15s': 20}
+
+Feb_to_March_2026_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+Feb_to_Mar_2026_rainfall_data:
+  Audio: 62795 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 9
+  Subdir names: 2026_02_27, 2026_02_28, 2026_03_01, 2026_03_02, 2026_03_03...
+  Duration dist: {'10-15s': 20}
+
+January_2024_rainfall_audios_with_mech_data:
+  Audio: 3325 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 1
+  Subdir names: 2024-01-05
+  Mech columns: ['Time', 'device_frmpayload_data_rainfall']
+  Duration dist: {'<5s': 20}
+
+January_2025_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+January_2025_rainfall_data:
+  Audio: 63254 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 11
+  Subdir names: January_01_2025, January_02_2025, January_03_2025, January_04_2025, January_06_2025...
+  Duration dist: {'10-15s': 20}
+
+July_2024_rainfall_audios_with_mech_data:
+  Audio: 13203 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 8
+  Subdir names: 2024_07_01, 2024_07_03, 2024_07_06, 2024_07_17, 2024_07_18...
+  Mech columns: ['Time', 'device_frmpayload_data_rainfall']
+  Duration dist: {'10-15s': 20}
+
+June_2025_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+June_2025_Rainfall_data:
+  Audio: 68841 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 11
+  Subdir names: June_01_2025, June_02_2025, June_04_2025, June_05_2025, June_06_2025...
+  Duration dist: {'10-15s': 20}
+
+June_2026_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+June_2026_rainfall_data:
+  Audio: 15569 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 3
+  Subdir names: 2026_06_09, 2026_06_10, 2026_06_11
+  Duration dist: {'10-15s': 19, '<5s': 1}
+
+June_2026_rainfall_data_2:
+  Audio: 43722 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 6
+  Subdir names: 2026_06_12, 2026_06_13, 2026_06_14, 2026_06_15, 2026_06_16...
+  Duration dist: {'<5s': 1, '10-15s': 19}
+
+May_2024_rainfall_audios_with_mechanical_data:
+  Audio: 11071 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 16
+  Subdir names: 2024_05_11, 2024_05_12, 2024_05_14, 2024_05_15, 2024_05_16...
+  Mech columns: ['Time', 'device_frmpayload_data_rainfall']
+  Duration dist: {'10-15s': 20}
+
+May_2025_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+May_2025_Rainfall_Data:
+  Audio: 22600 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 3
+  Subdir names: May_29_2025, May_30_2025, May_31_2025
+  Duration dist: {'10-15s': 20}
+
+May_2026_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+May_2026_rainfall_data:
+  Audio: 32663 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 6
+  Subdir names: 2026_05_19, 2026_05_20, 2026_05_21, 2026_05_22, 2026_05_23...
+  Duration dist: {'10-15s': 20}
+
+November_2023_rainfall_audios_with_mech_data:
+  Audio: 3003 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 2
+  Subdir names: 2023_11_22, 2023_11_23
+  Mech columns: ['Time', 'device_frmpayload_data_rainfall']
+  Duration dist: {'10-15s': 20}
+
+November_2024_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'rainfall', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+November_2024_Rainfall_Data:
+  Audio: 33138 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 4
+  Subdir names: November_15_2024, November_16_2024, November_17_2024, November_20_2024
+  Duration dist: {'10-15s': 20}
+
+October_2025_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'value application_name=Acoustic raingauge deployment', 'value Acoustic raingauge deployment', 'rainfall', 'Device Name', 'Measurement', 'Rainfall (mm)']
+
+October_2025_rainfall_data:
+  Audio: 98221 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 15
+  Subdir names: October_03_2025, October_04_2025, October_05_2025, October_06_2025, October_07_2025...
+  Duration dist: {'10-15s': 20}
+
+September_2024_rainfall_audios_with_mech_data:
+  Audio: 5844 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 19
+  Subdir names: 2024_09_01, 2024_09_02, 2024_09_03, 2024_09_04, 2024_09_05...
+  Mech columns: ['time', 'rainfall']
+  Duration dist: {'10-15s': 20}
+
+September_2025_mechanical_rainfall_data:
+  Audio: 0 files
+  Video: 0 files
+  Data:  1 files
+  Subdirs: 0
+  Mech columns: ['time', 'value Acoustic raingauge deployment', 'value application_name=Acoustic raingauge deployment', 'Device Name', 'Measurement', 'Rainfall (mm)', 'rainfall']
+
+September_2025_rainfall_data:
+  Audio: 71775 files
+  Video: 0 files
+  Data:  0 files
+  Subdirs: 11
+  Subdir names: September_19_2025, September_20_2025, September_21_2025, September_22_2025, September_23_2025...
+  Duration dist: {'10-15s': 20}
+
+================================================================================
+CRITICAL FINDINGS & RECOMMENDATIONS
+================================================================================
+
+FOUND 780726 AUDIO FILES!
+   -> Update cleaning script to search recursively
+   -> Process subdirectories individually
+
+NEXT STEPS:
+   1. Review this report to understand file structure
+   2. Decide if video files need audio extraction
+   3. Update cleaning script to handle nested folders
+   4. Process folder-by-folder to save memory
