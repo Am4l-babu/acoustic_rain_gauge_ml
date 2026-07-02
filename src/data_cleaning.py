@@ -38,8 +38,6 @@ NUM_WORKERS       = 16        # workers for parallel audio processing
 CHUNK_SIZE        = 32        # files per worker chunk
 DELETE_PROCESSED_FOLDERS = False  # Set True AFTER verifying output
 
-DESTINATION_DRIVE.mkdir(parents=True, exist_ok=True)
-
 # ============================================================
 # FOLDER PAIRS  (audio_folder_name, mechanical_folder_name)
 # Pairs where both names are identical = combined old-style folder
@@ -318,6 +316,8 @@ def process_pair(audio_folder: Path, mech_folder: Path, dest_folder: Path) -> di
 # MAIN
 # ============================================================
 def main():
+    DESTINATION_DRIVE.mkdir(parents=True, exist_ok=True)
+
     start_time = datetime.now()
     print(f"\n{'='*68}")
     print(f"  ACOUSTIC RAINFALL DATA CLEANING  —  {start_time:%Y-%m-%d %H:%M:%S}")

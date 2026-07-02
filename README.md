@@ -158,7 +158,13 @@ acoustic_rain_gauge_ml/
 - [x] **Stage 3 — Feature Engineering** ([`src/feature_extraction.py`](src/feature_extraction.py)): dropped the confounded short clips, filtered 204 rows of a repeating ~655mm sensor artifact (see below), split chronologically **per recording campaign** (a single global time cutoff was tried first and produced a severe train/test rainy-rate mismatch — 8.9% vs 39.4% — since campaigns like Feb-Mar 2026 are ~93% rainy; per-campaign splitting fixed it to 15.1% / 14.6%), computed class weights, fit a scaler on train only
 - [x] **Stage 4 — Model Training** ([`src/train_model.py`](src/train_model.py)): Logistic Regression baseline, XGBoost rain/no-rain classifier (**AUC-ROC 0.883**, recall 0.76, precision 0.46), XGBoost regressor for rainfall amount (**R² 0.155**) — confusion matrix and feature-importance chart in [`docs/`](docs/); `mfcc_2` is the single most important feature for rain detection
 - [x] **Stage 5 — Evaluation** ([`src/evaluate_model.py`](src/evaluate_model.py)): per-campaign breakdown showed the weak Stage 4 precision was mostly a **threshold problem, not a modeling one** — raising the decision threshold from 0.5 to ~0.78 lifts precision 0.46 → 0.70 at a recall cost of 0.76 → 0.62, no retraining needed; error analysis found false positives are acoustically loud non-rain sounds (elevated `spectral_rolloff`/`peak`) that resemble rain; a light train-only-validated hyperparameter search improved test AUC 0.883 → **0.893**
-- [ ] **Stage 6 — Real-Time Inference** *(stretch goal)*: a lightweight script that scores a live WAV clip in real time, using the chosen operating threshold from Stage 5 instead of the default 0.5
+- [x] **Stage 6 — Real-Time Inference** ([`src/predict.py`](src/predict.py)): scores a single WAV clip end-to-end — extracts the same features used in training, classifies at the Stage 5 tuned threshold (read live from `docs/stage5_evaluation_report.json`, not hardcoded), estimates rainfall in mm, and flags predictions as out-of-distribution if the clip isn't `10-15s`
+
+  ```bash
+  python src/predict.py path/to/clip.wav                # tuned threshold + mm estimate
+  python src/predict.py path/to/clip.wav --threshold 0.5 # override the operating threshold
+  python src/predict.py path/to/clip.wav --no-mm         # classification only
+  ```
 
 ---
 
