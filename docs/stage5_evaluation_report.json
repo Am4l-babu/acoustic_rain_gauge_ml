@@ -1,0 +1,76 @@
+{
+  "baseline_test_auc": 0.8831517005793559,
+  "tuned_test_auc": 0.8933364513074433,
+  "tuning_improved_model": true,
+  "best_params_by_val_auc": {
+    "n_estimators": 500,
+    "max_depth": 8,
+    "learning_rate": 0.03,
+    "min_child_weight": 5
+  },
+  "threshold_analysis": {
+    "default_threshold": 0.5,
+    "best_f1_threshold": 0.7807619571685791,
+    "best_f1_precision": 0.6994384890250127,
+    "best_f1_recall": 0.618991687748464,
+    "high_precision_threshold": 0.6790420413017273
+  },
+  "top_false_positive_campaigns": {
+    "June_2025_Rainfall_data": 4764,
+    "October_2025_rainfall_data": 3149,
+    "June_2026_rainfall_data_2": 1836,
+    "January_2025_rainfall_data": 1369,
+    "December_2024_rain_data": 1359
+  },
+  "top_false_negative_campaigns": {
+    "Feb_to_Mar_2026_rainfall_data": 3137,
+    "May_2025_Rainfall_Data": 853,
+    "June_2025_Rainfall_data": 489,
+    "July_2024_rainfall_audios_with_mech_data": 186,
+    "June_2026_rainfall_data_2": 144
+  },
+  "hyperparameter_search_results": [
+    {
+      "n_estimators": 500,
+      "max_depth": 8,
+      "learning_rate": 0.03,
+      "min_child_weight": 5,
+      "val_auc": 0.8920360014008523
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 8,
+      "learning_rate": 0.05,
+      "min_child_weight": 1,
+      "val_auc": 0.8916538354480225
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": 6,
+      "learning_rate": 0.03,
+      "min_child_weight": 5,
+      "val_auc": 0.8854684635390064
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 6,
+      "learning_rate": 0.05,
+      "min_child_weight": 1,
+      "val_auc": 0.8844112498209693
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 6,
+      "learning_rate": 0.03,
+      "min_child_weight": 1,
+      "val_auc": 0.8779026412975949
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 4,
+      "learning_rate": 0.05,
+      "min_child_weight": 1,
+      "val_auc": 0.8641307297478374
+    }
+  ]
+}
