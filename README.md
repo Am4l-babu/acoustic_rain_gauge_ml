@@ -6,7 +6,7 @@ This project trains a machine learning model to estimate rainfall — whether it
 
 <p align="left">
   <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/status-data%20pipeline%20complete-brightgreen" alt="Status">
+  <img src="https://img.shields.io/badge/status-feature%20engineering%20complete-brightgreen" alt="Status">
   <img src="https://img.shields.io/badge/dataset-780%2C725%20audio%20clips-orange" alt="Dataset size">
   <img src="https://img.shields.io/badge/span-Dec%202023%20→%20Jun%202026-lightgrey" alt="Time span">
 </p>
@@ -131,7 +131,7 @@ acoustic_rain_gauge_ml/
 │   ├── data_cleaning_gpu.py   # Experimental: batched GPU feature extraction
 │   ├── analyze_dataset_v2.py  # Recursive dataset structure/health report
 │   ├── dry_run_test.py        # Small-sample sanity check before a full run
-│   ├── feature_extraction.py  # (stub) standalone feature module — TODO
+│   ├── feature_extraction.py  # Stage 3: duration-filter, per-campaign split, scaling
 │   ├── train_model.py         # (stub) XGBoost training & evaluation — TODO
 │   └── utils.py               # (stub) shared helpers — TODO
 │
@@ -143,8 +143,9 @@ acoustic_rain_gauge_ml/
 ├── docs/
 │   └── dataset_analysis_report_v2.txt   # Full recursive dataset scan
 │
-├── models/                    # Trained model artifacts (.pkl / .json)
-├── notebooks/                 # EDA notebooks (to be created)
+├── models/                    # Trained model artifacts + feature_scaler.pkl
+├── notebooks/
+│   └── eda.ipynb              # Stage 2: combined-dataset exploration
 └── requirements.txt
 ```
 
@@ -153,8 +154,8 @@ acoustic_rain_gauge_ml/
 ## 🗺️ Roadmap
 
 - [x] **Stage 1 — Data Cleaning**: discover, timestamp, align, extract features, resume-safe — *done, 780,725 clips processed*
-- [ ] **Stage 2 — Exploratory Data Analysis**: combine all monthly CSVs, plot rainfall & feature distributions, correlation heatmaps, rainy-vs-dry comparisons
-- [ ] **Stage 3 — Feature Engineering**: handle class imbalance, feature scaling, derived ratios, time-based (not shuffled) train/test split
+- [x] **Stage 2 — Exploratory Data Analysis** ([`notebooks/eda.ipynb`](notebooks/eda.ipynb)): combined all monthly CSVs, plotted rainfall & feature distributions, correlation heatmap, rainy-vs-dry comparisons — *surfaced the duration confound noted below*
+- [x] **Stage 3 — Feature Engineering** ([`src/feature_extraction.py`](src/feature_extraction.py)): dropped the confounded short clips, split chronologically **per recording campaign** (a single global time cutoff was tried first and produced a severe train/test rainy-rate mismatch — 8.9% vs 39.4% — since campaigns like Feb-Mar 2026 are ~93% rainy; per-campaign splitting fixed it to 15.1% / 14.6%), computed class weights, fit a scaler on train only
 - [ ] **Stage 4 — Model Training**: baseline classifier → XGBoost rain/no-rain classifier → regression for rainfall amount, cross-validated on time folds
 - [ ] **Stage 5 — Evaluation**: precision/recall/F1/AUC-ROC, RMSE/MAE, feature importance, per-month generalization check
 - [ ] **Stage 6 — Real-Time Inference** *(stretch goal)*: a lightweight script that scores a live WAV clip in real time
@@ -191,7 +192,7 @@ python src/analyze_dataset_v2.py
 A few details worth knowing before building on top of this:
 
 - **Alignment tolerance is 2 minutes**, not 5 — every clip's nearest mechanical reading must fall within that window or it's marked `is_aligned = False` and labeled dry by default.
-- **Clip duration isn't perfectly uniform.** ~97% of clips are 10–15s, but **January 2024 (100%) and December 2023 (96%)** are short, sub-5-second clips — any padding/framing logic in feature engineering needs to account for this.
+- **Clip duration isn't perfectly uniform.** ~97% of clips are 10–15s, but **January 2024 (100%) and December 2023 (96%)** are short, sub-5-second clips with a measurably different acoustic profile and rainy-rate — `feature_extraction.py` (Stage 3) drops these before training rather than mixing durations.
 - **Audio sample rate isn't recorded anywhere in the pipeline output** — don't assume a specific rate without checking the source files directly.
 - The GPU pipeline is a working, independent implementation, not a drop-in replacement yet — it hasn't been cross-validated feature-by-feature against the CPU pipeline's output.
 
