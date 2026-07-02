@@ -50,6 +50,14 @@ FEATURE_COLS = [
 KEEP_DURATION_CATEGORY = "10-15s"
 TEST_FRACTION = 0.2
 
+# Legitimate readings in this dataset top out around 21.6mm (a real heavy
+# downpour in May 2024). Anything past this is treated as a sensor
+# artifact rather than real rainfall -- most visibly a repeating ~655.2-
+# 655.33mm value that shows up identically across unrelated recording
+# campaigns (May 2025 and Feb-Mar 2026), which is a signature of a
+# corrupted/overflowed counter, not weather.
+RAINFALL_MM_CAP = 50.0
+
 
 def load_combined() -> pd.DataFrame:
     if not COMBINED_DATA.exists():
@@ -66,6 +74,14 @@ def drop_confounded_clips(df: pd.DataFrame) -> pd.DataFrame:
     dropped = len(df) - len(kept)
     print(f"  Dropped {dropped:,} non-{KEEP_DURATION_CATEGORY} clips "
           f"({dropped / len(df):.1%} of dataset)")
+    return kept
+
+
+def drop_sensor_artifact_readings(df: pd.DataFrame) -> pd.DataFrame:
+    kept = df[df["rainfall_mm"] <= RAINFALL_MM_CAP].reset_index(drop=True)
+    dropped = len(df) - len(kept)
+    print(f"  Dropped {dropped:,} rows with rainfall_mm > {RAINFALL_MM_CAP} "
+          f"(sensor artifacts, e.g. repeating ~655mm readings)")
     return kept
 
 
@@ -105,10 +121,14 @@ def main():
 
     print("\n[2] Dropping duration-confounded clips...")
     df = drop_confounded_clips(df)
-    rows_after_filter = len(df)
+    rows_after_duration_filter = len(df)
+
+    print("\n[3] Dropping sensor-artifact rainfall readings...")
+    df = drop_sensor_artifact_readings(df)
+    rows_after_artifact_filter = len(df)
     df["is_rainy"] = (df["rainfall_mm"] > 0).astype(int)
 
-    print("\n[3] Chronological train/test split (per month_folder)...")
+    print("\n[4] Chronological train/test split (per month_folder)...")
     train_df, test_df = chronological_split(df, TEST_FRACTION)
     print(f"  Train      : {len(train_df):,} rows "
           f"({train_df['timestamp'].min()} -> {train_df['timestamp'].max()})")
@@ -117,21 +137,21 @@ def main():
     print(f"  Train rainy: {train_df['is_rainy'].mean():.1%}")
     print(f"  Test rainy : {test_df['is_rainy'].mean():.1%}")
 
-    print("\n[4] Computing class weights (from training split only)...")
+    print("\n[5] Computing class weights (from training split only)...")
     classes = sorted(train_df["is_rainy"].unique())
     weights = compute_class_weight(class_weight="balanced", classes=classes,
                                     y=train_df["is_rainy"])
     class_weights = {int(c): float(w) for c, w in zip(classes, weights)}
     print(f"  Class weights: {class_weights}")
 
-    print("\n[5] Fitting StandardScaler on training features...")
+    print("\n[6] Fitting StandardScaler on training features...")
     scaler = StandardScaler()
     scaler.fit(train_df[FEATURE_COLS])
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump(scaler, MODELS_DIR / "feature_scaler.pkl")
     print(f"  Saved: {MODELS_DIR / 'feature_scaler.pkl'}")
 
-    print("\n[6] Saving train/test splits...")
+    print("\n[7] Saving train/test splits...")
     keep_cols = ["audio_filename", "month_folder", "timestamp",
                  "duration_sec", *FEATURE_COLS, "rainfall_mm", "is_rainy"]
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -142,8 +162,11 @@ def main():
 
     metadata = {
         "rows_before_duration_filter": rows_before_filter,
-        "rows_after_duration_filter": rows_after_filter,
-        "dropped_duration_confounded_rows": rows_before_filter - rows_after_filter,
+        "rows_after_duration_filter": rows_after_duration_filter,
+        "dropped_duration_confounded_rows": rows_before_filter - rows_after_duration_filter,
+        "rows_after_artifact_filter": rows_after_artifact_filter,
+        "dropped_sensor_artifact_rows": rows_after_duration_filter - rows_after_artifact_filter,
+        "rainfall_mm_cap": RAINFALL_MM_CAP,
         "kept_duration_category": KEEP_DURATION_CATEGORY,
         "feature_columns": FEATURE_COLS,
         "test_fraction": TEST_FRACTION,

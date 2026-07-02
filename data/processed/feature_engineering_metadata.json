@@ -2,6 +2,9 @@
   "rows_before_duration_filter": 780725,
   "rows_after_duration_filter": 759804,
   "dropped_duration_confounded_rows": 20921,
+  "rows_after_artifact_filter": 759600,
+  "dropped_sensor_artifact_rows": 204,
+  "rainfall_mm_cap": 50.0,
   "kept_duration_category": "10-15s",
   "feature_columns": [
     "rms",
@@ -20,13 +23,13 @@
   ],
   "test_fraction": 0.2,
   "split_strategy": "per-month_folder chronological (last test_fraction of each campaign)",
-  "train_rows": 607836,
-  "test_rows": 151968,
-  "train_rainy_fraction": 0.15103909607196678,
-  "test_rainy_fraction": 0.14593203832385765,
+  "train_rows": 607673,
+  "test_rows": 151927,
+  "train_rainy_fraction": 0.15081137388036,
+  "test_rainy_fraction": 0.14570155403581983,
   "class_weights": {
-    "0": 0.5889552718936338,
-    "1": 3.3104011676669534
+    "0": 0.5887973350334962,
+    "1": 3.3153998079525118
   },
   "scaler_file": "models/feature_scaler.pkl"
 }
