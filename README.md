@@ -6,7 +6,7 @@ This project trains a machine learning model to estimate rainfall — whether it
 
 <p align="left">
   <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/status-feature%20engineering%20complete-brightgreen" alt="Status">
+  <img src="https://img.shields.io/badge/status-baseline%20models%20trained-brightgreen" alt="Status">
   <img src="https://img.shields.io/badge/dataset-780%2C725%20audio%20clips-orange" alt="Dataset size">
   <img src="https://img.shields.io/badge/span-Dec%202023%20→%20Jun%202026-lightgrey" alt="Time span">
 </p>
@@ -155,9 +155,9 @@ acoustic_rain_gauge_ml/
 
 - [x] **Stage 1 — Data Cleaning**: discover, timestamp, align, extract features, resume-safe — *done, 780,725 clips processed*
 - [x] **Stage 2 — Exploratory Data Analysis** ([`notebooks/eda.ipynb`](notebooks/eda.ipynb)): combined all monthly CSVs, plotted rainfall & feature distributions, correlation heatmap, rainy-vs-dry comparisons — *surfaced the duration confound noted below*
-- [x] **Stage 3 — Feature Engineering** ([`src/feature_extraction.py`](src/feature_extraction.py)): dropped the confounded short clips, split chronologically **per recording campaign** (a single global time cutoff was tried first and produced a severe train/test rainy-rate mismatch — 8.9% vs 39.4% — since campaigns like Feb-Mar 2026 are ~93% rainy; per-campaign splitting fixed it to 15.1% / 14.6%), computed class weights, fit a scaler on train only
-- [ ] **Stage 4 — Model Training**: baseline classifier → XGBoost rain/no-rain classifier → regression for rainfall amount, cross-validated on time folds
-- [ ] **Stage 5 — Evaluation**: precision/recall/F1/AUC-ROC, RMSE/MAE, feature importance, per-month generalization check
+- [x] **Stage 3 — Feature Engineering** ([`src/feature_extraction.py`](src/feature_extraction.py)): dropped the confounded short clips, filtered 204 rows of a repeating ~655mm sensor artifact (see below), split chronologically **per recording campaign** (a single global time cutoff was tried first and produced a severe train/test rainy-rate mismatch — 8.9% vs 39.4% — since campaigns like Feb-Mar 2026 are ~93% rainy; per-campaign splitting fixed it to 15.1% / 14.6%), computed class weights, fit a scaler on train only
+- [x] **Stage 4 — Model Training** ([`src/train_model.py`](src/train_model.py)): Logistic Regression baseline, XGBoost rain/no-rain classifier (**AUC-ROC 0.883**, recall 0.76, precision 0.46), XGBoost regressor for rainfall amount (**R² 0.155**) — confusion matrix and feature-importance chart in [`docs/`](docs/); `mfcc_2` is the single most important feature for rain detection
+- [ ] **Stage 5 — Evaluation**: deeper error analysis, per-month generalization check, hyperparameter tuning on time-series folds
 - [ ] **Stage 6 — Real-Time Inference** *(stretch goal)*: a lightweight script that scores a live WAV clip in real time
 
 ---
@@ -195,6 +195,7 @@ A few details worth knowing before building on top of this:
 - **Clip duration isn't perfectly uniform.** ~97% of clips are 10–15s, but **January 2024 (100%) and December 2023 (96%)** are short, sub-5-second clips with a measurably different acoustic profile and rainy-rate — `feature_extraction.py` (Stage 3) drops these before training rather than mixing durations.
 - **Audio sample rate isn't recorded anywhere in the pipeline output** — don't assume a specific rate without checking the source files directly.
 - The GPU pipeline is a working, independent implementation, not a drop-in replacement yet — it hasn't been cross-validated feature-by-feature against the CPU pipeline's output.
+- **A handful of mechanical readings are sensor artifacts, not real rain.** 204 rows carry `rainfall_mm` ≈ 655.2–655.33 identically across unrelated recording campaigns (real readings top out at 21.6mm) — almost certainly a corrupted or overflowed counter. `feature_extraction.py` drops anything above 50mm before it reaches training; this originally produced a broken regressor (R² of **-0.045**, worse than predicting the mean) until caught by actually running the pipeline.
 
 ---
 
