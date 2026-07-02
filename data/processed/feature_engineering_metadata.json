@@ -1,0 +1,32 @@
+{
+  "rows_before_duration_filter": 780725,
+  "rows_after_duration_filter": 759804,
+  "dropped_duration_confounded_rows": 20921,
+  "kept_duration_category": "10-15s",
+  "feature_columns": [
+    "rms",
+    "peak",
+    "par",
+    "spectral_centroid",
+    "spectral_bandwidth",
+    "spectral_rolloff",
+    "zero_crossing_rate",
+    "energy_variance",
+    "mfcc_0",
+    "mfcc_1",
+    "mfcc_2",
+    "mfcc_3",
+    "mfcc_4"
+  ],
+  "test_fraction": 0.2,
+  "split_strategy": "per-month_folder chronological (last test_fraction of each campaign)",
+  "train_rows": 607836,
+  "test_rows": 151968,
+  "train_rainy_fraction": 0.15103909607196678,
+  "test_rainy_fraction": 0.14593203832385765,
+  "class_weights": {
+    "0": 0.5889552718936338,
+    "1": 3.3104011676669534
+  },
+  "scaler_file": "models/feature_scaler.pkl"
+}
