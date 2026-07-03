@@ -152,7 +152,7 @@ def main():
     print(f"  Saved: {MODELS_DIR / 'feature_scaler.pkl'}")
 
     print("\n[7] Saving train/test splits...")
-    keep_cols = ["audio_filename", "month_folder", "timestamp",
+    keep_cols = ["audio_filename", "audio_full_path", "month_folder", "timestamp",
                  "duration_sec", *FEATURE_COLS, "rainfall_mm", "is_rainy"]
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     train_df[keep_cols].to_csv(OUTPUT_DIR / "train.csv", index=False)

@@ -9,3 +9,9 @@ matplotlib==3.8.2
 seaborn==0.13.0
 soundfile==0.12.1
 tqdm>=4.68
+
+# GPU deep-learning stack (data_cleaning_gpu.py, src/train_dl_model.py).
+# Install with: pip install torch==2.6.0+cu124 torchaudio==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0+cu124
+torchaudio==2.6.0+cu124
+torchinfo==1.8.0

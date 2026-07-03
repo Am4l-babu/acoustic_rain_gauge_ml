@@ -6,7 +6,7 @@ This project trains a machine learning model to estimate rainfall — whether it
 
 <p align="left">
   <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/status-baseline%20models%20trained-brightgreen" alt="Status">
+  <img src="https://img.shields.io/badge/status-DL%20ablation%20pilot%20complete-brightgreen" alt="Status">
   <img src="https://img.shields.io/badge/dataset-780%2C725%20audio%20clips-orange" alt="Dataset size">
   <img src="https://img.shields.io/badge/span-Dec%202023%20→%20Jun%202026-lightgrey" alt="Time span">
 </p>
@@ -132,7 +132,12 @@ acoustic_rain_gauge_ml/
 │   ├── analyze_dataset_v2.py  # Recursive dataset structure/health report
 │   ├── dry_run_test.py        # Small-sample sanity check before a full run
 │   ├── feature_extraction.py  # Stage 3: duration-filter, per-campaign split, scaling
-│   ├── train_model.py         # (stub) XGBoost training & evaluation — TODO
+│   ├── train_model.py         # Stage 4: XGBoost classifier + regressor training
+│   ├── evaluate_model.py      # Stage 5: threshold tuning, error analysis, light HP search
+│   ├── predict.py             # Stage 6: single-clip real-time inference
+│   ├── dl_dataset.py          # Stage 7: waveform Dataset + GPU-batched MFCC extractor
+│   ├── dl_models.py           # Stage 7: CNN/LSTM/Transformer regression heads
+│   ├── train_dl_model.py      # Stage 7: DL ablation training loop (pilot/full modes)
 │   └── utils.py               # (stub) shared helpers — TODO
 │
 ├── data/
@@ -141,7 +146,8 @@ acoustic_rain_gauge_ml/
 │   └── external/              # Any external datasets or metadata
 │
 ├── docs/
-│   └── dataset_analysis_report_v2.txt   # Full recursive dataset scan
+│   ├── dataset_analysis_report_v2.txt   # Full recursive dataset scan
+│   └── PROGRESS.md            # Stage 7 status: pilot results, next steps, key facts
 │
 ├── models/                    # Trained model artifacts + feature_scaler.pkl
 ├── notebooks/
@@ -164,6 +170,21 @@ acoustic_rain_gauge_ml/
   python src/predict.py path/to/clip.wav                # tuned threshold + mm estimate
   python src/predict.py path/to/clip.wav --threshold 0.5 # override the operating threshold
   python src/predict.py path/to/clip.wav --no-mm         # classification only
+  ```
+
+- [x] **Stage 7 — Deep Learning Ablation** ([`src/train_dl_model.py`](src/train_dl_model.py), pilot complete; full-scale training pending): the Stage 4 regressor (R²=0.155) was weak because XGBoost was fed *time-averaged* MFCC means — a single scalar per coefficient — discarding all temporal structure within a clip. Reimplemented the SARID paper's feature×architecture ablation (their code has unfilled template placeholders and shape bugs, so it wasn't reusable as-is): a GPU-batched MFCC extractor ([`src/dl_dataset.py`](src/dl_dataset.py)) feeds the full `(40, 157)` time-series into a CNN, LSTM, and Transformer regressor ([`src/dl_models.py`](src/dl_models.py)), one clip's MFCC precomputed once and cached in memory (source audio lives on a mechanical HDD — random-order reads measured 7.3× slower than sequential, making per-epoch on-the-fly loading infeasible). Pilot run (40,000 train / 10,000 test rows, 20 epochs each) confirmed the hypothesis — every architecture beat the baseline by 1.7-2.2×:
+
+  | Model | Best R² | vs. baseline (0.155) |
+  |---|---|---|
+  | **Transformer** | **0.3469** | **2.24×** |
+  | CNN | 0.3173 | 2.05× |
+  | LSTM | 0.2705 | 1.74× |
+
+  See [`docs/PROGRESS.md`](docs/PROGRESS.md) for full pilot metrics, timing, and the next decision point (mid-scale vs. full 607K-row training run, ETA ~2-3h vs. ~9-10h on a mechanical HDD).
+
+  ```bash
+  python src/train_dl_model.py --pilot --models cnn,lstm,transformer --epochs 20  # pilot (fast)
+  python src/train_dl_model.py --full --models transformer --epochs 40           # full-scale (multi-hour)
   ```
 
 ---
@@ -199,7 +220,7 @@ A few details worth knowing before building on top of this:
 
 - **Alignment tolerance is 2 minutes**, not 5 — every clip's nearest mechanical reading must fall within that window or it's marked `is_aligned = False` and labeled dry by default.
 - **Clip duration isn't perfectly uniform.** ~97% of clips are 10–15s, but **January 2024 (100%) and December 2023 (96%)** are short, sub-5-second clips with a measurably different acoustic profile and rainy-rate — `feature_extraction.py` (Stage 3) drops these before training rather than mixing durations.
-- **Audio sample rate isn't recorded anywhere in the pipeline output** — don't assume a specific rate without checking the source files directly.
+- **Audio sample rate**: confirmed empirically (Stage 7 investigation) at **8000 Hz, mono, exactly 10.0s (80,000 samples)** across all 19 recording campaigns in the `10-15s`-duration training subset.
 - The GPU pipeline is a working, independent implementation, not a drop-in replacement yet — it hasn't been cross-validated feature-by-feature against the CPU pipeline's output.
 - **A handful of mechanical readings are sensor artifacts, not real rain.** 204 rows carry `rainfall_mm` ≈ 655.2–655.33 identically across unrelated recording campaigns (real readings top out at 21.6mm) — almost certainly a corrupted or overflowed counter. `feature_extraction.py` drops anything above 50mm before it reaches training; this originally produced a broken regressor (R² of **-0.045**, worse than predicting the mean) until caught by actually running the pipeline.
 
