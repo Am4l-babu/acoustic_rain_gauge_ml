@@ -10,6 +10,13 @@ seaborn==0.13.0
 soundfile==0.12.1
 tqdm>=4.68
 
+# Master feature store (src/master_feature_extraction.py) + feature selection
+# (src/feature_selection.py). shap is pinned to 0.47.2 — newer shap releases
+# require numpy>=2, which conflicts with numpy==1.26.4 pinned above.
+PyWavelets==1.9.0
+pyarrow==24.0.0
+shap==0.47.2
+
 # GPU deep-learning stack (data_cleaning_gpu.py, src/train_dl_model.py).
 # Install with: pip install torch==2.6.0+cu124 torchaudio==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124
 torch==2.6.0+cu124

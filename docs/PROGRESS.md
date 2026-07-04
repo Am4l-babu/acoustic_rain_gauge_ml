@@ -63,6 +63,37 @@ Full-scale training on the full 607,673-row train set was estimated at **~9-10 h
 
 ---
 
+## 🔜 Stage 8 — Master Feature Store & SHAP Selection (built, not yet run at full scale)
+
+**Goal:** Give the XGBoost regressor (R²=0.155 baseline) a much richer, hand-crafted feature set as a cheaper alternative/complement to the Stage 7 DL path — 175 features across 7 families (time-domain/Teager, spectral incl. flux, MFCC, dense mel-band stats, wavelet, histogram-packet rhythm, onset/tempo), computed in parallel and written to chunked Parquet, then narrowed down via SHAP.
+
+### What's built
+- **`src/master_feature_extraction.py`** — supersedes `src/advanced_feature_extraction.py` (63 features); this is a superset, so run one or the other, not both.
+- **`src/feature_selection.py`** — XGBoost + `shap.TreeExplainer`, ranks all 175 features by mean |SHAP value|, keeps top-N, saves `optimized_rain_dataset.parquet` + a full importance CSV.
+
+### Two bugs caught while integrating the originally-proposed script
+1. **Wasteful resampling**: the draft config loaded every clip at 16kHz, forcing librosa to upsample from the true native 8kHz (confirmed in Stage 7). Upsampling fabricates no information above the real 4kHz Nyquist limit and measured ~22ms/clip of pure overhead. Fixed: `TARGET_SR = 8000`.
+2. **`spectral_contrast` crashes at 8kHz**: its default band edges (`fmin=200, n_bands=6`) reach 25,600 Hz — past Nyquist at both 8kHz *and* 16kHz, but only raises `librosa.util.exceptions.ParameterError` at the lower rate in practice. Fixed: `n_bands=3` when `sr <= 8000`.
+
+### ETA — measured, not guessed
+Benchmarked directly on this machine (20-core CPU) using a synthetic clip matching the real dataset's confirmed properties (8kHz, mono, 10.0s):
+
+| | Feature compute | + I/O (seq. HDD) | + I/O (random HDD, worst case) |
+|---|---|---|---|
+| At 8kHz (fixed) | ~30ms/clip | ~38ms/clip | ~85ms/clip |
+| At 16kHz (original draft) | ~59ms/clip | ~67ms/clip | ~114ms/clip |
+
+- **Single-core, full 780,725 clips**: ~8.2h (sequential-read case) to ~18.5h (worst-case random-read case).
+- **Parallel, 18 workers (this machine has 20 cores)**: realistic **~1-2 hours**, extrapolated from measured per-clip cost at 40-75% parallel efficiency — not an end-to-end timed run, since the source audio drive (`F:\arg_dataset_unzip`, a mechanical HDD) wasn't connected when this was benchmarked. **Run `python src/master_feature_extraction.py --limit 2000` first** to get a real measured throughput before committing to the full run — same "calibrate on a small slice first" approach used for the Stage 7 DL pilot.
+- **Output size**: ~1.5-3GB of Parquet (measured via a representative synthetic write), comfortably inside the ~30GB free on the dataset drive at time of writing.
+
+### Not yet done
+- No full-scale run against real audio yet (source HDD wasn't connected during integration/benchmarking).
+- SHAP-based top-N selection not yet run against a real master store.
+- Not yet merged into `train_model.py`/`train_dl_model.py` as an alternative feature source.
+
+---
+
 ## 📌 Key Facts for Future Reference
 
 - Audio: 8000 Hz, mono, exactly 10.0s (80,000 samples) for the `10-15s`-duration training subset — 607,673 train / 151,927 test rows.

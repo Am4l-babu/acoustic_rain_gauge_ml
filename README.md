@@ -6,7 +6,7 @@ This project trains a machine learning model to estimate rainfall — whether it
 
 <p align="left">
   <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/status-DL%20ablation%20pilot%20complete-brightgreen" alt="Status">
+  <img src="https://img.shields.io/badge/status-master%20feature%20store%20(175%20feat)-brightgreen" alt="Status">
   <img src="https://img.shields.io/badge/dataset-780%2C725%20audio%20clips-orange" alt="Dataset size">
   <img src="https://img.shields.io/badge/span-Dec%202023%20→%20Jun%202026-lightgrey" alt="Time span">
 </p>
@@ -106,14 +106,17 @@ Class imbalance (≈15% rainy) is expected — it doesn't rain most of the time 
   <img src="https://img.shields.io/badge/XGBoost-model-4B8BBE">
   <img src="https://img.shields.io/badge/scikit--learn-metrics%20%2F%20preprocessing-F7931E?logo=scikitlearn&logoColor=white">
   <img src="https://img.shields.io/badge/matplotlib%20%2B%20seaborn-visualization-11557C">
+  <img src="https://img.shields.io/badge/PyWavelets-multi--scale%20DSP-lightgrey">
+  <img src="https://img.shields.io/badge/SHAP-feature%20selection-8A2BE2">
 </p>
 
 | Layer | Tools |
 |---|---|
-| Audio I/O & DSP | `soundfile`, `librosa`, `torchaudio` |
-| Data wrangling | `pandas`, `numpy` |
+| Audio I/O & DSP | `soundfile`, `librosa`, `torchaudio`, `PyWavelets` |
+| Data wrangling | `pandas`, `numpy`, `pyarrow` (Parquet) |
 | Parallelism | `multiprocessing.Pool` (CPU) / CUDA batching via `torch` (GPU) |
-| Modeling (planned) | `xgboost`, `scikit-learn` |
+| Modeling | `xgboost`, `scikit-learn` |
+| Feature selection | `shap` (TreeExplainer over XGBoost) |
 | Visualization | `matplotlib`, `seaborn` |
 | UX | `tqdm` progress bars, JSON metadata, resume-on-restart |
 
@@ -138,6 +141,9 @@ acoustic_rain_gauge_ml/
 │   ├── dl_dataset.py          # Stage 7: waveform Dataset + GPU-batched MFCC extractor
 │   ├── dl_models.py           # Stage 7: CNN/LSTM/Transformer regression heads
 │   ├── train_dl_model.py      # Stage 7: DL ablation training loop (pilot/full modes)
+│   ├── advanced_feature_extraction.py  # 63-feature pilot (superseded by master_feature_extraction.py)
+│   ├── master_feature_extraction.py    # Stage 8: 175-feature master store, parallel + resume-safe
+│   ├── feature_selection.py            # Stage 8: SHAP-ranked top-N feature selection
 │   └── utils.py               # (stub) shared helpers — TODO
 │
 ├── data/
@@ -186,6 +192,16 @@ acoustic_rain_gauge_ml/
   python src/train_dl_model.py --pilot --models cnn,lstm,transformer --epochs 20  # pilot (fast)
   python src/train_dl_model.py --full --models transformer --epochs 40           # full-scale (multi-hour)
   ```
+
+- [ ] **Stage 8 — Master Feature Store & Selection** ([`src/master_feature_extraction.py`](src/master_feature_extraction.py), [`src/feature_selection.py`](src/feature_selection.py)): expands the hand-crafted scalar feature set to **175 features per clip** across 7 families — time-domain/Teager energy, spectral (incl. flux), MFCC, dense mel-band statistics (40 bands × mean/std), wavelet decomposition, histogram-packet rhythm, and onset/tempo — written to chunked, resume-safe Parquet. Supersedes [`src/advanced_feature_extraction.py`](src/advanced_feature_extraction.py) (that script's 5 feature families are all reimplemented here as a superset — run one or the other, not both, since several column names overlap). Fixed two issues found while integrating: (1) the extractor loaded audio at 16kHz, forcing every clip to resample up from its true native 8kHz — pure upsampling that adds no information above the real 4kHz Nyquist limit and cost ~22ms/clip for nothing, so `TARGET_SR` is now 8000; (2) `spectral_contrast`'s default band edges reach past Nyquist at 8kHz and raise a `ParameterError`, fixed by reducing `n_bands` to 3 at low sample rates. `feature_selection.py` then trains a quick XGBoost regressor over the full store and uses SHAP (`TreeExplainer`) to rank every feature by mean |SHAP value|, keeping only the top-N for training — avoids feeding a 175-wide, partly-redundant feature vector straight into a model.
+
+  ```bash
+  python src/master_feature_extraction.py                # full run, all clips (see ETA below)
+  python src/master_feature_extraction.py --limit 2000    # smoke test / timing pilot first
+  python src/feature_selection.py --top-n 30              # SHAP-rank and keep the best 30
+  ```
+
+  **Measured on this machine (20-core CPU, dataset on a mechanical HDD)**, not guessed: feature compute alone is ~30ms/clip at native 8kHz (vs. ~59ms/clip at the original 16kHz — the sample-rate fix roughly halves compute cost on top of removing the resample). Single-core, full 780,725-clip dataset: **~8h sequential-disk-read case, ~18.5h worst-case random-disk-read case**. Parallelized across 18 worker processes, realistic wall-clock is **~1-2 hours** (measured components extrapolated, not an end-to-end timed run — actual multiprocessing/disk-contention overhead will vary, hence the `--limit` smoke-test flag to calibrate before committing to the full run). Output: ~1.5-3GB of Parquet chunks (comfortably inside the ~30GB free on the dataset drive at time of writing).
 
 ---
 
