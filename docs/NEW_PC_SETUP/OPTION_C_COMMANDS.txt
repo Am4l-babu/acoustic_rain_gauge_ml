@@ -1,0 +1,219 @@
+═══════════════════════════════════════════════════════════════════════════════
+                  OPTION C: DL + 63 ADVANCED FEATURES
+                         COMMAND REFERENCE SHEET
+═══════════════════════════════════════════════════════════════════════════════
+
+ESTIMATED TOTAL TIME: 16-23 hours (mostly waiting)
+  • Setup: 20 min
+  • Feature extraction: 14-20 hours (LEAVE RUNNING OVERNIGHT!)
+  • Training: 1-2 hours
+  • Evaluation: 5 min
+
+EXPECTED RESULT: R² ≈ 0.40-0.45 (2.6x better than baseline 0.155!)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 1: SETUP (20 minutes)
+═══════════════════════════════════════════════════════════════════════════════
+
+.\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+
+Wait for: "✅ SETUP COMPLETE! READY TO TRAIN"
+
+
+STEP 2: EXTRACT 63 ADVANCED FEATURES (14-20 HOURS)
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️  THIS RUNS FOR 16-20 HOURS — DO THIS FRIDAY EVENING AND LEAVE OVERNIGHT!
+
+cd D:\acoustic_rain_gauge_ml
+.\.venv\Scripts\Activate.ps1
+
+python src/advanced_feature_extraction.py
+
+Wait for: "🎉 EXTRACTION COMPLETE!"
+Output will be: D:\advanced_features\advanced_features_dataset.csv (~2-3 GB)
+
+MONITOR PROGRESS (optional, in another PowerShell window):
+  ls D:\advanced_features\advanced_features_dataset.csv  # Check file size
+  Get-Process python | Select-Object CPU, Memory          # Check CPU/RAM
+
+
+STEP 3: MERGE ADVANCED FEATURES WITH TRAINING DATA (5 MINUTES)
+═══════════════════════════════════════════════════════════════════════════════
+
+Still in: cd D:\acoustic_rain_gauge_ml with venv activated
+
+python << 'EOF'
+import pandas as pd
+
+print('Merging advanced features with training data...')
+
+# Load data
+train = pd.read_csv('data/processed/train.csv')
+test = pd.read_csv('data/processed/test.csv')
+adv = pd.read_csv('D:/advanced_features/advanced_features_dataset.csv')
+
+# Get advanced feature columns
+adv_cols = [c for c in adv.columns if c not in
+            ['timestamp', 'rainfall_mm', 'is_rainy', 'source_folder', 'audio_filename']]
+
+# Merge
+train_merged = train.merge(adv[['audio_filename'] + adv_cols], on='audio_filename', how='inner')
+test_merged = test.merge(adv[['audio_filename'] + adv_cols], on='audio_filename', how='inner')
+
+# Save
+train_merged.to_csv('data/processed/train_with_advanced.csv', index=False)
+test_merged.to_csv('data/processed/test_with_advanced.csv', index=False)
+
+print(f'✅ Merged! Train: {len(train_merged)}, Test: {len(test_merged)}')
+print(f'✅ Total features: {len([c for c in train_merged.columns if c not in ["timestamp", "rainfall_mm", "is_rainy", "month_folder", "audio_filename"]])}')
+EOF
+
+Output should show:
+  ✅ Merged! Train: 607673, Test: 151927
+  ✅ Total features: 103 (40 MFCC + 63 Advanced)
+
+
+STEP 4: TRAIN TRANSFORMER WITH ADVANCED FEATURES (1-2 HOURS)
+═══════════════════════════════════════════════════════════════════════════════
+
+Still in: cd D:\acoustic_rain_gauge_ml with venv activated
+
+python src/train_dl_model.py --model transformer --epochs 50 --batch_size 32
+
+Wait for final output showing:
+  Test R²: 0.38-0.45
+  Test RMSE: 1.6-2.0 mm
+  Test MAE: 0.50-0.60 mm
+
+
+STEP 5: CHECK RESULTS (1 MINUTE)
+═══════════════════════════════════════════════════════════════════════════════
+
+cat docs\model_evaluation_report.json
+
+Or formatted output:
+
+python -c "
+import json
+with open('docs/model_evaluation_report.json') as f:
+    results = json.load(f)
+    print('FINAL RESULTS: Transformer + 63 Advanced Features')
+    print(f\"R² Score: {results.get('transformer', {}).get('r2_score', 'N/A')}\")
+    print(f\"RMSE: {results.get('transformer', {}).get('rmse', 'N/A')} mm\")
+    print(f\"MAE: {results.get('transformer', {}).get('mae', 'N/A')} mm\")
+"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+MONITORING & TIPS
+═══════════════════════════════════════════════════════════════════════════════
+
+DURING FEATURE EXTRACTION (16-20 hours):
+  • Don't close PowerShell window (or progress lost)
+  • Don't restart PC (progress lost)
+  • PC can be slow for other tasks (CPU busy)
+  • Safe to walk away/sleep (it's safe)
+
+Monitor progress:
+  Get-Process python                 # See CPU usage
+  ls D:\advanced_features\           # Check output file size growing
+
+During training (1-2 hours):
+  nvidia-smi -l 1                    # Monitor GPU (if available)
+  Ctrl+C to stop (will save checkpoint)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+"CUDA out of memory" during training:
+  python src/train_dl_model.py --model transformer --batch_size 8
+
+"(.venv) not in prompt":
+  .\.venv\Scripts\Activate.ps1
+
+"advanced_features_dataset.csv not found":
+  ls D:\advanced_features\
+  # If not there, feature extraction didn't finish yet (still running)
+
+"File too large to load":
+  # This is normal — 2-3 GB advanced features CSV
+  # Takes 30 sec to load, don't worry
+
+Feature extraction running very slowly:
+  Get-Process python | Select-Object CPU, Memory
+  # If CPU < 5%, something wrong
+  # Check dataset: ls E:\arg_cleaned_dataset\
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EXPECTED TIMELINE
+═══════════════════════════════════════════════════════════════════════════════
+
+Friday 5:00 PM:
+  Run Step 1 (setup) - 20 min ✓
+
+Friday 5:30 PM:
+  Run Step 2 (feature extraction) - START AND LEAVE RUNNING
+
+Saturday 10:00 AM:
+  Check if done (should be)
+  Run Step 3 (merge) - 5 min ✓
+
+Saturday 10:10 AM:
+  Run Step 4 (training) - 1-2 hours
+
+Saturday 11:30 AM - 12:30 PM:
+  Results ready! 🎉
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FEATURE BREAKDOWN (What Gets Extracted)
+═══════════════════════════════════════════════════════════════════════════════
+
+MFCC (from original setup):
+  • 40 mel-frequency cepstral coefficients
+  • Standard for audio ML
+
+NEW ADVANCED FEATURES (63 total):
+
+1. Teager Energy (6 features) — ⭐ MOST IMPORTANT (24.2% importance)
+   • Extremely sensitive to raindrop impacts
+
+2. Wavelet (19 features) — Multi-scale decomposition
+   • Captures rain at different scales
+
+3. Spectral Flux (5 features) — Rapid frequency changes
+   • Rain creates sharp spectral changes; wind is steady
+
+4. Histogram Packets (27 features) — Temporal patterns
+   • Rain has spiky irregular packets vs steady noise
+
+5. Entropy (10 features) — Signal complexity
+   • Rain is more complex/random than wind/silence
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EXPECTED IMPROVEMENT BY FEATURE TYPE
+═══════════════════════════════════════════════════════════════════════════════
+
+Baseline (MFCC only):
+  R² = 0.155
+
++ Teager Energy:
+  R² ≈ 0.25-0.30   (+0.10 improvement)
+
++ Teager + Wavelet:
+  R² ≈ 0.32-0.35   (+0.05 more)
+
++ All 63 Advanced:
+  R² ≈ 0.38-0.45   (+0.05-0.10 more)
+
+Final: 2.6x BETTER than baseline! 🎯
+
+═══════════════════════════════════════════════════════════════════════════════
+
+YOU'RE ALL SET! Follow the steps above. Questions? Check TROUBLESHOOTING.md

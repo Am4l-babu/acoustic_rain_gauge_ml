@@ -1,0 +1,292 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    NEW PC MIGRATION: COMPLETE COMMAND GUIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+PART 1: CURRENT PC (PREPARE FILES FOR MIGRATION)
+═══════════════════════════════════════════════════════════════════════════════
+
+⏱️  TIME: ~15 minutes
+
+1️⃣  Open PowerShell AS ADMINISTRATOR on current PC
+
+2️⃣  Navigate to project:
+    cd D:\acoustic_rain_gauge_ml
+
+3️⃣  Copy files to HDD (this is the migration script):
+    .\migrate_to_hdd.ps1 -TargetDrive "E:" -HDD_DataPath "E:\acoustic_rain_gauge_ml"
+
+    (Replace "E:" if your HDD is on a different drive)
+
+4️⃣  Wait for message: "✅ MIGRATION COMPLETE!"
+
+5️⃣  Verify it worked:
+    ls E:\acoustic_rain_gauge_ml\src\
+    ls E:\arg_cleaned_dataset\  (should show 19 month folders)
+
+✅ Current PC is done! Proceed to Part 2.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+PART 2: TRANSFER HARDWARE (PHYSICAL ACTION)
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  On current PC:
+    Right-click on HDD → Eject
+    (Wait for "safe to remove" message)
+
+2️⃣  Physically disconnect HDD
+
+3️⃣  Connect HDD to NEW PC
+
+4️⃣  Verify connection on new PC:
+    Open File Explorer → check for new drive (e.g., E:, F:, etc.)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+PART 3: NEW PC SETUP (AUTOMATED)
+═══════════════════════════════════════════════════════════════════════════════
+
+⏱️  TIME: ~20 minutes (mostly automatic)
+
+1️⃣  On NEW PC, verify HDD is accessible:
+    dir E:\acoustic_rain_gauge_ml\src\
+    (If this works, proceed. If not, check drive letter in File Explorer)
+
+2️⃣  Open PowerShell AS ADMINISTRATOR on new PC
+
+3️⃣  Run setup script with correct HDD drive letter:
+    .\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+
+    (Adjust "E:" if your HDD is on different drive, e.g., F:)
+
+4️⃣  Wait for: "✅ SETUP COMPLETE! READY TO TRAIN"
+    (This takes ~20 min. Most time is pip installing packages)
+
+5️⃣  Verify GPU support (optional):
+    python -c "import torch; print(torch.cuda.is_available())"
+
+    Output: True = GPU available (fast training!)
+           False = CPU only (slower, but still works)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+PART 4A: QUICK TEST (OPTION A - 5 MINUTES)
+═══════════════════════════════════════════════════════════════════════════════
+
+Use this to validate setup works. Same as the Stage 4 baseline.
+
+1️⃣  In NEW PowerShell window, navigate to project:
+    cd D:\acoustic_rain_gauge_ml
+
+2️⃣  Activate environment:
+    .\.venv\Scripts\Activate.ps1
+    (Prompt should now show "(.venv)" prefix)
+
+3️⃣  Train XGBoost (quick validation):
+    python src/train_model.py
+    (Takes ~5 minutes)
+
+4️⃣  Evaluate:
+    python src/evaluate_model.py
+
+5️⃣  Check results:
+    cat docs\model_evaluation_report.json
+
+Expected R²: 0.155 (baseline)
+
+✅ If this works, setup is verified!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+PART 4B: GOOD RESULTS (OPTION B - 1-2 HOURS)
+═══════════════════════════════════════════════════════════════════════════════
+
+Use this for good accuracy with neural networks (no extra features).
+
+1️⃣  Make sure environment is activated:
+    cd D:\acoustic_rain_gauge_ml
+    .\.venv\Scripts\Activate.ps1
+
+2️⃣  Train Transformer:
+    python src/train_dl_model.py --model transformer --epochs 50 --batch_size 32
+
+    (Takes ~1-2 hours with GPU, or 3-5 hours with CPU)
+
+3️⃣  Wait for: "FINAL RESULTS" section at bottom
+
+4️⃣  Check final R² score (should be ~0.30-0.31)
+
+Expected R²: 0.30-0.31 (2x better than baseline!)
+
+Note: If you get "CUDA out of memory", reduce batch size:
+      python src/train_dl_model.py --model transformer --batch_size 16
+
+
+═══════════════════════════════════════════════════════════════════════════════
+PART 4C: BEST RESULTS (OPTION C - 16-23 HOURS)
+═══════════════════════════════════════════════════════════════════════════════
+
+Use this for the BEST accuracy using 63 advanced features.
+⚠️  This takes 14-20 hours for feature extraction (can run overnight!)
+
+STEP 1: EXTRACT ADVANCED FEATURES (14-20 HOURS)
+───────────────────────────────────────────────
+
+1️⃣  Make sure environment is activated:
+    cd D:\acoustic_rain_gauge_ml
+    .\.venv\Scripts\Activate.ps1
+
+2️⃣  Start feature extraction (this runs for 14-20 hours!):
+    python src/advanced_feature_extraction.py
+
+    ⚠️  DO NOT CLOSE THIS WINDOW
+    ⚠️  DO NOT RESTART PC
+    ✅ Safe to leave running (go sleep/work on other things)
+
+3️⃣  Monitor progress (optional, in ANOTHER PowerShell window):
+    Get-Process python | Select-Object CPU, Memory
+    (Shows how much CPU/RAM being used)
+
+4️⃣  Wait for: "🎉 EXTRACTION COMPLETE!"
+    (Check output file: ls D:\advanced_features\advanced_features_dataset.csv)
+
+EXPECTED OUTPUT:
+  ✅ Successfully processed: 760,000 files
+  📊 Total features extracted: 63
+  💾 Saved to: D:\advanced_features\advanced_features_dataset.csv (~2-3 GB)
+
+
+STEP 2: MERGE FEATURES (5 MINUTES)
+──────────────────────────────────
+
+After feature extraction done, run this merge script:
+
+python << 'EOF'
+import pandas as pd
+
+print('Merging advanced features with training data...')
+
+# Load data
+train = pd.read_csv('data/processed/train.csv')
+test = pd.read_csv('data/processed/test.csv')
+adv = pd.read_csv('D:/advanced_features/advanced_features_dataset.csv')
+
+# Get advanced feature columns
+adv_cols = [c for c in adv.columns if c not in
+            ['timestamp', 'rainfall_mm', 'is_rainy', 'source_folder', 'audio_filename']]
+
+# Merge
+train_merged = train.merge(adv[['audio_filename'] + adv_cols], on='audio_filename', how='inner')
+test_merged = test.merge(adv[['audio_filename'] + adv_cols], on='audio_filename', how='inner')
+
+# Save
+train_merged.to_csv('data/processed/train_with_advanced.csv', index=False)
+test_merged.to_csv('data/processed/test_with_advanced.csv', index=False)
+
+print(f'✅ Merged! Train: {len(train_merged)}, Test: {len(test_merged)}')
+print(f'✅ Total features: {len([c for c in train_merged.columns if c not in ["timestamp", "rainfall_mm", "is_rainy", "month_folder", "audio_filename"]])}')
+EOF
+
+EXPECTED OUTPUT:
+  ✅ Merged! Train: 607673, Test: 151927
+  ✅ Total features: 103 (40 MFCC + 63 Advanced)
+
+
+STEP 3: TRAIN TRANSFORMER (1-2 HOURS)
+──────────────────────────────────────
+
+After merging done:
+
+python src/train_dl_model.py --model transformer --epochs 50 --batch_size 32
+
+(Takes ~1-2 hours with GPU)
+
+Wait for: "FINAL RESULTS" section at bottom
+
+
+STEP 4: CHECK RESULTS (1 MINUTE)
+────────────────────────────────
+
+cat docs\model_evaluation_report.json
+
+Or formatted:
+
+python -c "
+import json
+with open('docs/model_evaluation_report.json') as f:
+    results = json.load(f)
+    print('FINAL RESULTS: Transformer + 63 Advanced Features')
+    print(f\"R² Score: {results.get('transformer', {}).get('r2_score', 'N/A')}\")
+    print(f\"RMSE: {results.get('transformer', {}).get('rmse', 'N/A')} mm\")
+    print(f\"MAE: {results.get('transformer', {}).get('mae', 'N/A')} mm\")
+"
+
+Expected R²: 0.40-0.45 (2.6x better than baseline!)
+
+REALISTIC TIMELINE FOR OPTION C:
+  Friday 5:00 PM   - Run Step 1 (setup) - 20 min
+  Friday 5:30 PM   - Start Step 2 (feature extraction, leave running)
+  Saturday 10:00 AM - Feature extraction done, run Step 3 (training) - 1-2 hours
+  Saturday 12:00 PM - Results ready! 🎉
+
+
+═══════════════════════════════════════════════════════════════════════════════
+COMMON ISSUES & FIXES
+═══════════════════════════════════════════════════════════════════════════════
+
+❌ "Module not found: <package>"
+   Solution: .\.venv\Scripts\Activate.ps1 (make sure venv is activated)
+
+❌ "CUDA out of memory during training"
+   Solution: python src/train_dl_model.py --batch_size 8 (reduce batch size)
+
+❌ "advanced_features_dataset.csv not found"
+   Solution: Feature extraction still running. Wait for completion.
+            Check: ls D:\advanced_features\
+
+❌ "Python not in PATH"
+   Solution: Install Python from python.org
+            IMPORTANT: Check "Add Python to PATH" during installation
+            Then restart PowerShell
+
+❌ "HDD not found"
+   Solution: Check correct drive letter
+            Open File Explorer → see what drive shows up
+            Use that letter instead of "E:"
+
+For more issues, see TROUBLESHOOTING.md
+
+
+═══════════════════════════════════════════════════════════════════════════════
+QUICK REFERENCE: WHERE ARE MY FILES?
+═══════════════════════════════════════════════════════════════════════════════
+
+After new PC setup:
+
+Project location:           D:\acoustic_rain_gauge_ml\
+Training scripts:           D:\acoustic_rain_gauge_ml\src\
+Training data:              D:\acoustic_rain_gauge_ml\data\processed\
+Virtual environment:        D:\acoustic_rain_gauge_ml\.venv\
+Trained models:             D:\acoustic_rain_gauge_ml\models\
+Results/evaluation:         D:\acoustic_rain_gauge_ml\docs\model_evaluation_report.json
+
+Dataset location:           E:\arg_cleaned_dataset\ (on HDD)
+Advanced features (if C):   D:\advanced_features\ or E:\advanced_features\
+
+
+═══════════════════════════════════════════════════════════════════════════════
+SUMMARY: WHICH OPTION TO CHOOSE?
+═══════════════════════════════════════════════════════════════════════════════
+
+Option A (5 min):    "Just test it works"          → R² = 0.155
+Option B (1-2 hr):   "Good results, reasonable"    → R² = 0.30
+Option C (16-23 hr): "Best possible results"       → R² = 0.40-0.45 ⭐
+
+Pick C if:
+  ✅ You have time (can run overnight)
+  ✅ You want the best accuracy (2.6x better!)
+  ✅ You have 50GB free disk space
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Ready? Follow the steps above for your chosen path! 🚀

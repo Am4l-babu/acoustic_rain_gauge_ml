@@ -1,0 +1,263 @@
+═══════════════════════════════════════════════════════════════════════════════
+         NEW PC SETUP FOLDER — FILE MANIFEST & QUICK GUIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 Location: docs/NEW_PC_SETUP/
+
+All files needed for migrating this project to a new PC are in this folder.
+
+═══════════════════════════════════════════════════════════════════════════════
+FILES IN THIS FOLDER
+═══════════════════════════════════════════════════════════════════════════════
+
+📌 START HERE
+─────────────────────────────────────────────────────────────────────────────
+
+1. README.md (this file's parent)
+   ├─ What: Overview of entire setup process
+   ├─ Read time: 5 minutes
+   ├─ Contains: Quick navigation to all other files
+   └─ You should: Read first to understand the big picture
+
+
+🔧 SCRIPTS (MUST RUN)
+─────────────────────────────────────────────────────────────────────────────
+
+2. NEW_PC_SETUP.ps1
+   ├─ What: Automated setup script for NEW PC
+   ├─ When: Run on new PC after connecting HDD
+   ├─ Time: ~20 minutes
+   ├─ Command: .\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+   └─ Does: Copies files, creates venv, installs all dependencies, detects GPU
+
+
+📋 GUIDES (READ THESE)
+─────────────────────────────────────────────────────────────────────────────
+
+3. SETUP_OVERVIEW.md
+   ├─ What: Detailed explanation of the migration process
+   ├─ Read time: 10 minutes
+   ├─ Contains: Why this approach, what each script does, verification checklist
+   └─ You should: Read if you want to understand what's happening
+
+4. STEP_BY_STEP_GUIDE.txt
+   ├─ What: Copy-paste commands for ENTIRE workflow
+   ├─ Read time: 5 minutes
+   ├─ Contains: Every command you need, organized by step
+   └─ You should: Keep open while working, copy commands directly
+
+5. ALL_OPTIONS_COMPARISON.md
+   ├─ What: Compare all 3 training options (XGBoost, Transformer, Advanced)
+   ├─ Read time: 10 minutes
+   ├─ Contains: Pros/cons, timelines, expected results for each option
+   └─ You should: Read to decide which training path is right for you
+
+
+🚀 FOR OPTION C (ADVANCED FEATURES + 16-23 HOUR TRAINING)
+─────────────────────────────────────────────────────────────────────────────
+
+6. OPTION_C_COMMANDS.txt
+   ├─ What: Copy-paste commands ONLY for Option C workflow
+   ├─ Read time: 5 minutes
+   ├─ Contains: Feature extraction, merging, training, evaluation commands
+   └─ You should: Keep open while running Option C
+
+
+🆘 HELP & TROUBLESHOOTING
+─────────────────────────────────────────────────────────────────────────────
+
+7. TROUBLESHOOTING.md
+   ├─ What: Solutions to common problems
+   ├─ Read time: Reference (search for your error)
+   ├─ Contains: 15+ common issues and how to fix them
+   └─ You should: Consult if anything goes wrong
+
+
+═══════════════════════════════════════════════════════════════════════════════
+QUICK START (5 MINUTES)
+═══════════════════════════════════════════════════════════════════════════════
+
+ON CURRENT PC:
+
+1. Open PowerShell as Admin
+2. cd D:\acoustic_rain_gauge_ml
+3. .\migrate_to_hdd.ps1 -TargetDrive "E:" -HDD_DataPath "E:\acoustic_rain_gauge_ml"
+4. Wait for: "✅ MIGRATION COMPLETE!"
+5. Physically move HDD to new PC
+
+
+ON NEW PC:
+
+1. Connect HDD to new PC
+2. Open PowerShell as Admin
+3. cd to where you placed NEW_PC_SETUP.ps1 (Desktop, C:\, etc.)
+4. .\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+5. Wait for: "✅ SETUP COMPLETE! READY TO TRAIN"
+6. Choose training option from STEP_BY_STEP_GUIDE.txt
+
+
+═══════════════════════════════════════════════════════════════════════════════
+HOW TO USE THIS FOLDER
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 1: Copy Files for Transport
+────────────────────────────────
+Copy this ENTIRE folder to a USB drive or email it to yourself:
+  • NEW_PC_SETUP.ps1
+  • SETUP_OVERVIEW.md
+  • STEP_BY_STEP_GUIDE.txt
+  • ALL_OPTIONS_COMPARISON.md
+  • OPTION_C_COMMANDS.txt
+  • TROUBLESHOOTING.md
+
+(These files are small, total ~500 KB)
+
+
+STEP 2: On Current PC
+────────────────────
+You already have migrate_to_hdd.ps1 in D:\acoustic_rain_gauge_ml\
+Just follow the quick start section above
+
+
+STEP 3: On New PC
+────────────────
+1. Extract/save the files you copied
+2. Place NEW_PC_SETUP.ps1 somewhere accessible (Desktop, C:\, etc.)
+3. Open SETUP_OVERVIEW.md or STEP_BY_STEP_GUIDE.txt for commands
+4. Follow the steps
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FILE SIZES (for USB/Email)
+═══════════════════════════════════════════════════════════════════════════════
+
+README.md                    ~30 KB
+SETUP_OVERVIEW.md            ~25 KB
+STEP_BY_STEP_GUIDE.txt       ~15 KB
+NEW_PC_SETUP.ps1             ~18 KB
+ALL_OPTIONS_COMPARISON.md    ~20 KB
+OPTION_C_COMMANDS.txt        ~12 KB
+TROUBLESHOOTING.md           ~22 KB
+FILE_MANIFEST.txt (this)     ~8 KB
+───────────────────────────────────
+TOTAL                        ~150 KB
+
+All 8 files fit on smallest USB drive, easily!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+RECOMMENDED READING ORDER
+═══════════════════════════════════════════════════════════════════════════════
+
+If you're familiar with the project:
+  1. STEP_BY_STEP_GUIDE.txt (quick reference)
+  2. OPTION_C_COMMANDS.txt (if doing advanced features)
+
+If you want to understand everything:
+  1. README.md (overview)
+  2. SETUP_OVERVIEW.md (detailed explanation)
+  3. ALL_OPTIONS_COMPARISON.md (understand training options)
+  4. STEP_BY_STEP_GUIDE.txt (commands)
+  5. OPTION_C_COMMANDS.txt (if doing Option C)
+
+If something breaks:
+  1. TROUBLESHOOTING.md (find your error)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+WHAT'S NOT IN THIS FOLDER (But You Need)
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ migrate_to_hdd.ps1
+   └─ Location: D:\acoustic_rain_gauge_ml\ (in project root)
+   └─ You need: Copy this to where NEW_PC_SETUP.ps1 is for reference
+
+✅ Project source code
+   └─ Location: Gets copied to HDD by migrate_to_hdd.ps1
+   └─ You need: Don't copy manually, NEW_PC_SETUP.ps1 handles it
+
+✅ 220 GB Dataset
+   └─ Location: E:\arg_cleaned_dataset\ (stays on HDD)
+   └─ You need: Already exists, no action required
+
+
+═══════════════════════════════════════════════════════════════════════════════
+WHICH FILE TO USE WHEN
+═══════════════════════════════════════════════════════════════════════════════
+
+Situation:                          Use File:
+─────────────────────────────────────────────────────────────────────────────
+"I don't know where to start"       README.md
+
+"Why does this take so long?"       SETUP_OVERVIEW.md
+
+"I just need commands to copy"      STEP_BY_STEP_GUIDE.txt
+
+"I need to decide: A, B, or C?"     ALL_OPTIONS_COMPARISON.md
+
+"I'm doing advanced features"       OPTION_C_COMMANDS.txt
+
+"Something is broken"               TROUBLESHOOTING.md
+
+"What files are here?"              FILE_MANIFEST.txt (this)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY FACTS TO REMEMBER
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Setup is FULLY AUTOMATED
+   └─ NEW_PC_SETUP.ps1 does everything automatically
+   └─ ~20 minutes total
+
+✅ Three training options available
+   └─ Option A: 5 min, R²=0.155 (validation)
+   └─ Option B: 1-2 hours, R²=0.30 (good)
+   └─ Option C: 16-23 hours, R²=0.40-0.45 (best)
+
+✅ GPU recommended but not required
+   └─ Setup script detects GPU automatically
+   └─ Works on CPU too (just slower)
+
+✅ Dataset stays on HDD
+   └─ 220 GB stays on external drive
+   └─ Only essential files (~0.7 GB) copied to SSD
+
+✅ Feature extraction takes longest
+   └─ 14-20 hours is CPU-bound (can't use GPU)
+   └─ Perfect for overnight/weekend
+
+✅ Training is fast with GPU
+   └─ 1-2 hours (GPU)
+   └─ 3-5 hours (CPU)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING THIS FOLDER
+═══════════════════════════════════════════════════════════════════════════════
+
+Q: Where's migrate_to_hdd.ps1?
+A: It's in project root (D:\acoustic_rain_gauge_ml\), not in this folder
+
+Q: Can I edit these files?
+A: All files are plain text/markdown, you can edit if needed
+   But recommended: don't edit, use as-is
+
+Q: Are these files version controlled?
+A: Yes, everything is in docs/NEW_PC_SETUP/ folder in git
+
+Q: Can I delete files from this folder?
+A: Safe to delete after using, but keep at least SETUP_OVERVIEW.md for reference
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 BOTTOM LINE:
+  1. Read README.md or SETUP_OVERVIEW.md
+  2. Follow STEP_BY_STEP_GUIDE.txt
+  3. Choose training option from ALL_OPTIONS_COMPARISON.md
+  4. If problems, check TROUBLESHOOTING.md
+
+That's it! You've got everything you need. 🚀
+
+═══════════════════════════════════════════════════════════════════════════════
