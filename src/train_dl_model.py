@@ -185,7 +185,8 @@ def main():
         t0 = time.time()
         train_mfcc, train_y = precompute_mfcc(train_df, extractor, DEVICE,
                                                batch_size=256, num_workers=args.num_workers,
-                                               audio_root=args.audio_root)
+                                               audio_root=args.audio_root,
+                                               checkpoint_dir=MODELS_DIR / f"mfcc_checkpoints_{mode_tag}_train")
         print(f"  Train MFCC cache: {tuple(train_mfcc.shape)} in {time.time()-t0:.1f}s")
         torch.save({"mfcc": train_mfcc, "y": train_y}, train_cache_path)
         print(f"  Saved train MFCC cache -> {train_cache_path} (resume point if training crashes later)")
@@ -199,7 +200,8 @@ def main():
         t0 = time.time()
         test_mfcc, test_y = precompute_mfcc(test_df, extractor, DEVICE,
                                              batch_size=256, num_workers=args.num_workers,
-                                             audio_root=args.audio_root)
+                                             audio_root=args.audio_root,
+                                             checkpoint_dir=MODELS_DIR / f"mfcc_checkpoints_{mode_tag}_test")
         print(f"  Test MFCC cache : {tuple(test_mfcc.shape)} in {time.time()-t0:.1f}s")
         torch.save({"mfcc": test_mfcc, "y": test_y}, test_cache_path)
         print(f"  Saved test MFCC cache -> {test_cache_path} (resume point if training crashes later)")
