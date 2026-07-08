@@ -30,11 +30,28 @@ warnings.filterwarnings("ignore")
 # ==========================================
 # CONFIGURATION
 # ==========================================
-DATA_DIR = Path(r"D:\arg_cleaned_dataset")
-OUTPUT_DIR = Path(r"D:\master_feature_store")
-OUTPUT_DIR.mkdir(exist_ok=True)
+# OS/mount agnostic: derived from this script's own location rather than a
+# hardcoded drive letter or mount path, since the HDD holding the dataset can
+# show up as any letter on Windows (F:\, E:\, ...) or any mount point on Linux
+# (/media/user/E-HDD, /mnt/..., ...). Project layout is always
+# <root>/acoustic_rain_gauge_ml/src/master_feature_extraction.py, so the
+# root two levels up is wherever the HDD actually mounted, on either OS.
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = _PROJECT_ROOT / "arg_cleaned_dataset"
+OUTPUT_DIR = _PROJECT_ROOT / "master_feature_store"
+AUDIO_ROOT = _PROJECT_ROOT / "arg_dataset_unzip"
 
-NUM_WORKERS = max(1, mp.cpu_count() - 2)
+# cpu_count()-2 overcommits memory when other apps have most of the RAM in
+# use — measured firsthand on Windows: with only ~1.9GB free out of 16GB
+# total, spawning 18 workers (each importing numpy/scipy/librosa, ~200-400MB
+# apiece under Windows' spawn-per-worker reimport) crashed several workers
+# with "DLL load failed... paging file is too small". 6 is a safer default
+# cross-platform; override with --workers if you've confirmed more RAM is
+# free (rule of thumb: ~0.5GB free per worker on Windows). Linux's fork-based
+# multiprocessing shares already-imported modules via copy-on-write instead of
+# reimporting per worker, so it's usually safe to raise --workers higher there
+# — check free RAM with CHECK_SPECS.sh first.
+NUM_WORKERS = min(6, max(1, mp.cpu_count() - 2))
 CHUNK_SIZE = 5000
 
 # Native rate, confirmed in Stage 7 (README "Honest Notes"): every clip in the
@@ -203,23 +220,56 @@ def extract_all_features(args):
 # 2. MASTER PIPELINE
 # ==========================================
 
-def build_store(limit=None):
+def resolve_audio_path(raw_path, audio_root):
+    """Remap audio_full_path's baked-in drive letter/mount point to wherever
+    the dataset actually lives now, anchored on the "arg_dataset_unzip" folder
+    name so a plugged-in HDD landing on a different letter (Windows) or mount
+    point (Linux) doesn't break every lookup. audio_full_path was written on
+    Windows (e.g. "F:\\arg_dataset_unzip\\..."), so splitting must handle
+    backslashes explicitly — pathlib's PurePosixPath on Linux won't treat
+    backslash as a separator and would return the whole string as one part."""
+    normalized = str(raw_path).replace("\\", "/")
+    parts = normalized.split("/")
+    if "arg_dataset_unzip" in parts:
+        idx = parts.index("arg_dataset_unzip")
+        return audio_root.joinpath(*parts[idx + 1:])
+    return Path(raw_path)
+
+
+def build_store(limit=None, data_dir=None, output_dir=None, audio_root=None, workers=None):
+    data_dir = Path(data_dir) if data_dir else DATA_DIR
+    output_dir = Path(output_dir) if output_dir else OUTPUT_DIR
+    audio_root = Path(audio_root) if audio_root else AUDIO_ROOT
+    num_workers = workers if workers else NUM_WORKERS
+    output_dir.mkdir(exist_ok=True)
+
     print("=" * 70)
     print("MASTER FEATURE STORE — 176 features/clip")
     print("=" * 70)
-    print(f"Data directory   : {DATA_DIR}")
-    print(f"Output directory : {OUTPUT_DIR}")
-    print(f"Workers          : {NUM_WORKERS}")
+    print(f"Data directory   : {data_dir}")
+    print(f"Audio root       : {audio_root}")
+    print(f"Output directory : {output_dir}")
+    print(f"Workers          : {num_workers}")
     print(f"Sample rate      : {TARGET_SR} Hz (native, no resample)")
     print("=" * 70)
 
     print("\nScanning dataset...")
-    all_csvs = list(DATA_DIR.glob("**/cleaned_aligned_data.csv"))
+    all_csvs = list(data_dir.glob("**/cleaned_aligned_data.csv"))
     tasks = []
+    missing = 0
+    checked = 0
+    # With --limit set (smoke test), stop checking path.exists() as soon as we
+    # have enough valid tasks — each check is a filesystem stat against a
+    # mechanical HDD, and scanning all ~780k rows unconditionally before
+    # slicing to `limit` made --limit 2000 take as long as the full run.
+    scan_done = False
     for csv_file in all_csvs:
+        if scan_done:
+            break
         df = pd.read_csv(csv_file)
         for _, row in df.iterrows():
-            path = Path(row["audio_full_path"])
+            checked += 1
+            path = resolve_audio_path(row["audio_full_path"], audio_root)
             if path.exists():
                 tasks.append((path, {
                     "timestamp": row["timestamp"],
@@ -228,11 +278,23 @@ def build_store(limit=None):
                     "source_folder": csv_file.parent.name,
                     "audio_filename": row["audio_filename"],
                 }))
+            else:
+                missing += 1
 
-    if limit:
-        tasks = tasks[:limit]
+            if limit and len(tasks) >= limit:
+                scan_done = True
+                break
 
-    print(f"Found {len(tasks)} files. Starting extraction with {NUM_WORKERS} workers...")
+    if missing:
+        total = missing + len(tasks)
+        print(f"WARNING: {missing}/{total} audio files checked were not found under {audio_root} "
+              f"({missing / total:.1%}) — check audio_root / HDD drive letter if this looks high.")
+
+    print(f"Found {len(tasks)} files (checked {checked} rows). Starting extraction with {num_workers} workers...")
+
+    if len(tasks) == 0:
+        print("ABORTING: no valid audio files found — check --data-dir / --audio-root and that the HDD is connected.")
+        return
 
     # Resume-safety: skip chunks whose output already exists (matches the
     # resume-on-restart convention used by data_cleaning.py for multi-hour runs).
@@ -240,7 +302,7 @@ def build_store(limit=None):
     t_start = time.time()
     for i in range(0, len(tasks), CHUNK_SIZE):
         chunk_num += 1
-        out_path = OUTPUT_DIR / f"master_chunk_{chunk_num:03d}.parquet"
+        out_path = output_dir / f"master_chunk_{chunk_num:03d}.parquet"
         if out_path.exists():
             print(f"Chunk {chunk_num} already done, skipping ({out_path.name})")
             continue
@@ -248,7 +310,7 @@ def build_store(limit=None):
         chunk = tasks[i:i + CHUNK_SIZE]
         print(f"\nChunk {chunk_num}/{(len(tasks) - 1) // CHUNK_SIZE + 1}...")
 
-        with mp.Pool(NUM_WORKERS) as pool:
+        with mp.Pool(num_workers) as pool:
             results = list(tqdm(pool.imap(extract_all_features, chunk, chunksize=32), total=len(chunk)))
 
         valid = [r for r in results if r is not None]
@@ -259,12 +321,16 @@ def build_store(limit=None):
     elapsed = time.time() - t_start
     print(f"\n{'=' * 70}")
     print(f"EXTRACTION COMPLETE — {len(tasks)} clips in {elapsed / 3600:.2f}h ({elapsed / max(len(tasks), 1) * 1000:.1f} ms/clip)")
-    print(f"Output: {OUTPUT_DIR}")
+    print(f"Output: {output_dir}")
     print("=" * 70)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=None, help="Process only the first N clips (smoke test / timing pilot)")
+    parser.add_argument("--data-dir", type=str, default=None, help=f"Override dataset CSV directory (default: {DATA_DIR})")
+    parser.add_argument("--output-dir", type=str, default=None, help=f"Override output directory (default: {OUTPUT_DIR})")
+    parser.add_argument("--audio-root", type=str, default=None, help=f"Override audio root, i.e. wherever arg_dataset_unzip lives (default: {AUDIO_ROOT})")
+    parser.add_argument("--workers", type=int, default=None, help=f"Override parallel worker count (default: {NUM_WORKERS} — raise only if you've confirmed enough free RAM, ~0.5GB/worker)")
     args = parser.parse_args()
-    build_store(limit=args.limit)
+    build_store(limit=args.limit, data_dir=args.data_dir, output_dir=args.output_dir, audio_root=args.audio_root, workers=args.workers)

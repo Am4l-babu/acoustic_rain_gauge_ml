@@ -55,7 +55,7 @@ PART 3: NEW PC SETUP (AUTOMATED)
 2️⃣  Open PowerShell AS ADMINISTRATOR on new PC
 
 3️⃣  Run setup script with correct HDD drive letter:
-    .\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+    .\Windows\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
 
     (Adjust "E:" if your HDD is on different drive, e.g., F:)
 

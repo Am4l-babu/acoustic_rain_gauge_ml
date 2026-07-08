@@ -30,7 +30,7 @@ docs/NEW_PC_SETUP/
 ├── OPTION_C_COMMANDS.txt          ← Advanced features guide
 ├── TROUBLESHOOTING.md             ← Fix common issues
 ├── FILE_MANIFEST.txt              ← File descriptions
-└── NEW_PC_SETUP.ps1               ← Run on new PC ⭐
+└── Windows/NEW_PC_SETUP.ps1               ← Run on new PC ⭐
 ```
 
 ---
@@ -49,7 +49,7 @@ Disconnect HDD, connect to new PC
 ### Step 3: Setup New PC (20 min)
 **Location:** Wherever you saved NEW_PC_SETUP.ps1
 ```powershell
-.\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+.\Windows\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
 ```
 
 **Done!** Now train using commands from [STEP_BY_STEP_GUIDE.txt](STEP_BY_STEP_GUIDE.txt)
@@ -71,7 +71,7 @@ See [ALL_OPTIONS_COMPARISON.md](ALL_OPTIONS_COMPARISON.md) for details.
 ## 🔧 How to Use These Files
 
 ### For a Quick Start:
-1. Copy [NEW_PC_SETUP.ps1](NEW_PC_SETUP.ps1) to new PC
+1. Copy [NEW_PC_SETUP.ps1](Windows/NEW_PC_SETUP.ps1) to new PC
 2. Copy [STEP_BY_STEP_GUIDE.txt](STEP_BY_STEP_GUIDE.txt) for reference
 3. Follow the commands
 
@@ -111,7 +111,7 @@ See [ALL_OPTIONS_COMPARISON.md](ALL_OPTIONS_COMPARISON.md) for details.
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — 15+ common issues & fixes
 
 ### Scripts
-- **[NEW_PC_SETUP.ps1](NEW_PC_SETUP.ps1)** — Automated setup (run on new PC)
+- **[NEW_PC_SETUP.ps1](Windows/NEW_PC_SETUP.ps1)** — Automated setup (run on new PC)
 
 ---
 

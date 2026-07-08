@@ -10,11 +10,23 @@ Complete step-by-step guide for migrating this acoustic rain gauge ML project to
 |----------|---------|-----------|
 | **[SETUP_OVERVIEW.md](SETUP_OVERVIEW.md)** | 📌 Start here — understand the full process | 5 min |
 | **[STEP_BY_STEP_GUIDE.txt](STEP_BY_STEP_GUIDE.txt)** | Copy-paste commands for entire workflow | 10 min |
-| **[NEW_PC_SETUP.ps1](NEW_PC_SETUP.ps1)** | Automated setup script (run on new PC) | N/A |
+| **[NEW_PC_SETUP.ps1](Windows/NEW_PC_SETUP.ps1)** | Automated setup script (run on new PC) | N/A |
 | **[OPTION_C_ADVANCED_DL.md](OPTION_C_ADVANCED_DL.md)** | Deep learning + 63 advanced features guide | 20 min |
 | **[OPTION_C_COMMANDS.txt](OPTION_C_COMMANDS.txt)** | Copy-paste commands for Option C only | 5 min |
 | **[ALL_OPTIONS_COMPARISON.md](ALL_OPTIONS_COMPARISON.md)** | Compare all training paths (XGBoost/DL) | 10 min |
 | **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues & solutions | Reference |
+
+---
+
+## 🐧 New PC is Linux/Ubuntu instead of Windows?
+
+Everything above (`Windows/NEW_PC_SETUP.ps1` etc.) is PowerShell-only. For an Ubuntu new PC, use the `Ubuntu/` folder instead — it covers the Stage 8 master feature extraction workflow specifically (not the full training pipeline, which is still Windows-only in this doc set):
+
+```bash
+cd /media/$USER/E-HDD/acoustic_rain_gauge_ml   # or wherever the HDD mounted
+bash docs/NEW_PC_SETUP/Ubuntu/CHECK_SPECS.sh       # RAM/CPU/GPU/disk check + safe --workers suggestion
+bash docs/NEW_PC_SETUP/Ubuntu/RUN_EXTRACTION.sh    # pip install -> smoke test -> validate -> full run
+```
 
 ---
 
@@ -29,7 +41,7 @@ cd D:\acoustic_rain_gauge_ml
 
 ### On New PC (after connecting HDD):
 ```powershell
-.\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+.\Windows\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
 # Wait for: "✅ SETUP COMPLETE! READY TO TRAIN"
 ```
 
@@ -70,7 +82,7 @@ docs/NEW_PC_SETUP/
 ├── README.md                        ← You are here
 ├── SETUP_OVERVIEW.md                ← Start here (5 min read)
 ├── STEP_BY_STEP_GUIDE.txt           ← All commands
-├── NEW_PC_SETUP.ps1                 ← Run this on new PC
+├── Windows/NEW_PC_SETUP.ps1                 ← Run this on new PC
 ├── OPTION_C_ADVANCED_DL.md          ← For advanced features path
 ├── OPTION_C_COMMANDS.txt            ← Commands for Option C
 ├── ALL_OPTIONS_COMPARISON.md        ← Compare all options

@@ -21,3 +21,11 @@ models/*
 
 # Cloned external repos kept locally for reference/analysis only
 external_repos/
+
+# Auto-memory system (project-specific)
+.claude/
+
+# Data artifacts and logs
+*.parquet
+docs/**/*.txt
+docs/train_*_log.txt

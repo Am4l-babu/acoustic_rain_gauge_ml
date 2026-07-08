@@ -1,6 +1,6 @@
 # Project Progress — Acoustic Rain Gauge ML
 
-_Last updated: 2026-07-03_
+_Last updated: 2026-07-07_
 
 This file tracks where the project stands: what's done, what's in progress, and what's next. For full technical detail on Stages 1-6, see [README.md](../README.md#-roadmap). This file focuses on **Stage 7 (Deep Learning Ablation)**, which is the active work.
 
@@ -63,7 +63,7 @@ Full-scale training on the full 607,673-row train set was estimated at **~9-10 h
 
 ---
 
-## 🔜 Stage 8 — Master Feature Store & SHAP Selection (built, not yet run at full scale)
+## ✅ Stage 8 — Master Feature Store & SHAP Selection — COMPLETE (2026-07-07)
 
 **Goal:** Give the XGBoost regressor (R²=0.155 baseline) a much richer, hand-crafted feature set as a cheaper alternative/complement to the Stage 7 DL path — 175 features across 7 families (time-domain/Teager, spectral incl. flux, MFCC, dense mel-band stats, wavelet, histogram-packet rhythm, onset/tempo), computed in parallel and written to chunked Parquet, then narrowed down via SHAP.
 
@@ -71,26 +71,69 @@ Full-scale training on the full 607,673-row train set was estimated at **~9-10 h
 - **`src/master_feature_extraction.py`** — supersedes `src/advanced_feature_extraction.py` (63 features); this is a superset, so run one or the other, not both.
 - **`src/feature_selection.py`** — XGBoost + `shap.TreeExplainer`, ranks all 175 features by mean |SHAP value|, keeps top-N, saves `optimized_rain_dataset.parquet` + a full importance CSV.
 
-### Two bugs caught while integrating the originally-proposed script
+### Bugs caught while integrating the originally-proposed script
 1. **Wasteful resampling**: the draft config loaded every clip at 16kHz, forcing librosa to upsample from the true native 8kHz (confirmed in Stage 7). Upsampling fabricates no information above the real 4kHz Nyquist limit and measured ~22ms/clip of pure overhead. Fixed: `TARGET_SR = 8000`.
 2. **`spectral_contrast` crashes at 8kHz**: its default band edges (`fmin=200, n_bands=6`) reach 25,600 Hz — past Nyquist at both 8kHz *and* 16kHz, but only raises `librosa.util.exceptions.ParameterError` at the lower rate in practice. Fixed: `n_bands=3` when `sr <= 8000`.
+3. **Scan loop ignored `--limit` until after the fact** (caught 2026-07-04, first real run against real audio): the dataset scan called `path.exists()` for all ~780,744 rows across every CSV *before* slicing to `--limit`, so a "2000-clip smoke test" actually did a full-dataset filesystem scan first — on the mechanical HDD this made the smoke test take as long as the full run. Fixed: the scan loop now stops as soon as it's collected `limit` valid tasks.
+4. **`NUM_WORKERS = cpu_count()-2` (18 on this machine) crashed under real memory pressure**: with only ~1.9GB free RAM (other apps using the rest of 16GB), spawning 18 worker processes — each importing numpy/scipy/librosa (~200-400MB per worker) — caused several workers to fail with `ImportError: DLL load failed... The paging file is too small`. 2/5 clips silently failed in the first real test. Fixed: default lowered to `min(6, cpu_count()-2)`; added `--workers` override for machines with more free RAM.
+5. **Audio path portability**: `audio_full_path` in the CSVs is an absolute path baked in at Stage 1 time (e.g. `F:\arg_dataset_unzip\...`). If the HDD mounts under a different drive letter on another PC, every lookup would silently fail (the script just skips missing files). Fixed: `resolve_audio_path()` anchors on the `arg_dataset_unzip` folder name and remaps to wherever `--audio-root` (or the auto-detected script's own drive) actually is, plus a loud `WARNING` if >0% of checked files are missing.
 
-### ETA — measured, not guessed
-Benchmarked directly on this machine (20-core CPU) using a synthetic clip matching the real dataset's confirmed properties (8kHz, mono, 10.0s):
+### ETA — measured against real audio (2026-07-04)
+First real end-to-end run (previous numbers below were from a synthetic clip benchmark, since the source HDD wasn't connected at integration time):
+
+| | Result |
+|---|---|
+| **2000-clip smoke test, 6 workers** | 2000/2000 succeeded, 0 nulls, **31.6ms/clip** (62s total) |
+| **Full 780,725 clips, extrapolated at 6 workers** | **~6.9 hours** |
+
+This supersedes the earlier "~1-2h with 18 workers" estimate — that assumed 18 parallel workers, which we now know crashes on this machine under real memory pressure (see bug #4 above). 6 workers is the safe default; raise via `--workers` only on a machine with confirmed free RAM (~0.5GB/worker).
+
+Original synthetic-clip benchmark, kept for reference:
 
 | | Feature compute | + I/O (seq. HDD) | + I/O (random HDD, worst case) |
 |---|---|---|---|
 | At 8kHz (fixed) | ~30ms/clip | ~38ms/clip | ~85ms/clip |
 | At 16kHz (original draft) | ~59ms/clip | ~67ms/clip | ~114ms/clip |
 
-- **Single-core, full 780,725 clips**: ~8.2h (sequential-read case) to ~18.5h (worst-case random-read case).
-- **Parallel, 18 workers (this machine has 20 cores)**: realistic **~1-2 hours**, extrapolated from measured per-clip cost at 40-75% parallel efficiency — not an end-to-end timed run, since the source audio drive (`F:\arg_dataset_unzip`, a mechanical HDD) wasn't connected when this was benchmarked. **Run `python src/master_feature_extraction.py --limit 2000` first** to get a real measured throughput before committing to the full run — same "calibrate on a small slice first" approach used for the Stage 7 DL pilot.
 - **Output size**: ~1.5-3GB of Parquet (measured via a representative synthetic write), comfortably inside the ~30GB free on the dataset drive at time of writing.
 
+### New CLI overrides (added for the multi-PC / HDD-migration workflow)
+`master_feature_extraction.py` and `feature_selection.py` now accept `--data-dir`, `--output-dir`, `--audio-root`, `--workers` (extraction) and `--store-dir`, `--output-path` (selection). All default to auto-detecting the drive the script itself is running from, so the same code works whether the project lives on `D:`, `F:`, or any other letter a plugged-in HDD gets assigned.
+
+An automated wrapper — `docs/NEW_PC_SETUP/RUN_EXTRACTION.ps1` — chains `pip install` → smoke test → validate output is non-empty → full run, aborting with a clear message at any failure point instead of silently proceeding.
+
+### Full-scale extraction — COMPLETE (2026-07-07, run on Ubuntu i9-13900K, 8 workers)
+
+| | Result |
+|---|---|
+| **Clips processed** | 780,725 (780,713 after 12 unreadable/short clips dropped) |
+| **Wall time** | **4.34 hours** (20.0ms/clip — faster than the 31.6ms/clip Windows-based estimate) |
+| **Output** | 157 chunked Parquet files, ~0.77GB total, `master_feature_store/` |
+| **Known data quirk** | 16,556 rows in `December_2024_rain_data` are byte-identical duplicates (upstream CSV duplication, harmless — dropped via `drop_duplicates` before any join) |
+
+### SHAP feature selection — COMPLETE, per-target (2026-07-07)
+
+Initial run ranked all 175 features against `rainfall_mm` only and reused that ranking for both models — this **hurt classifier AUC** (0.842 vs 0.883 baseline) because the top regression-ranked features aren't the best rain/no-rain discriminators. Fixed by adding `--target {rainfall_mm, is_rainy}` to `feature_selection.py`, so the classifier and regressor now each get their own top-30 SHAP-ranked feature set:
+
+- Regression-ranked top features: dominated by dense mel-band means (`mel_band_8_mean`, `mel_band_7_mean`, ...), wavelet variance, spectral flux.
+- Classification-ranked top features: also mel-band-dominated but a different subset (`mel_band_27_mean`, `mel_band_36_mean`, ...) plus `mfcc_3_mean`, `fd_spectral_contrast_mean`.
+
+Evaluated via new **`src/train_optimized_model.py`**, which joins the master store's features onto `data/processed/train.csv`/`test.csv` (Stage 3's already-filtered, already-split population) rather than trusting `optimized_rain_dataset.parquet` as a standalone train/test source — this keeps the comparison to the Stage 4 baseline apples-to-apples (same 607,673/151,927 row split, same filters).
+
+| Model | Metric | Stage 4 baseline (13 features) | Stage 8 optimized (30 SHAP features, per-target) |
+|---|---|---|---|
+| Classifier | AUC-ROC | 0.883 | **0.887** |
+| Regressor | R² | 0.155 | **0.226** (+46% relative) |
+
+Regressor improvement is substantial; classifier improvement is modest but real (already-strong baseline, less headroom). Artifacts:
+- `F:\optimized_rain_dataset.parquet` / `..._is_rainy.parquet` — top-30 feature sets + target
+- `F:\feature_importance_shap.csv` / `..._is_rainy.csv` — full 175-feature SHAP rankings per target
+- `docs/model_evaluation_report_optimized.json` — final metrics + exact feature lists used
+
 ### Not yet done
-- No full-scale run against real audio yet (source HDD wasn't connected during integration/benchmarking).
-- SHAP-based top-N selection not yet run against a real master store.
-- Not yet merged into `train_model.py`/`train_dl_model.py` as an alternative feature source.
+- Not yet merged into `train_model.py`/`predict.py` as the default feature source (still a standalone comparison script).
+- Hurdle-model variant (regressor trained only on rainy samples, not all 780k rows incl. ~85% zeros) not yet tried — likely the next lever on the regression side.
+- No fusion yet with Stage 7's DL embeddings (pilot R²=0.3469, still the single biggest lever available).
 
 ---
 

@@ -141,6 +141,8 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num-workers", type=int, default=None,
                          help="Workers for MFCC precompute (0 on Windows, 8 on Linux by default)")
+    parser.add_argument("--audio-root", type=str, default=None,
+                         help="Override arg_dataset_unzip location (auto-detected from this script's own drive/mount by default)")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--pilot", action="store_true", default=True,
                         help=f"Train on a random {PILOT_TRAIN_N:,}/{PILOT_TEST_N:,} "
@@ -169,14 +171,38 @@ def main():
 
     print("\nPrecomputing MFCC once per split (shared across all architectures)...")
     extractor = MFCCExtractor().to(DEVICE)
-    t0 = time.time()
-    train_mfcc, train_y = precompute_mfcc(train_df, extractor, DEVICE,
-                                           batch_size=256, num_workers=args.num_workers)
-    print(f"  Train MFCC cache: {tuple(train_mfcc.shape)} in {time.time()-t0:.1f}s")
-    t0 = time.time()
-    test_mfcc, test_y = precompute_mfcc(test_df, extractor, DEVICE,
-                                         batch_size=256, num_workers=args.num_workers)
-    print(f"  Test MFCC cache : {tuple(test_mfcc.shape)} in {time.time()-t0:.1f}s")
+    mode_tag = "full" if not pilot else "pilot"
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    train_cache_path = MODELS_DIR / f"mfcc_cache_{mode_tag}_train.pt"
+    test_cache_path = MODELS_DIR / f"mfcc_cache_{mode_tag}_test.pt"
+
+    if train_cache_path.exists():
+        print(f"  Found cached train MFCC -> {train_cache_path}, loading instead of recomputing...")
+        cache = torch.load(train_cache_path)
+        train_mfcc, train_y = cache["mfcc"], cache["y"]
+        print(f"  Train MFCC cache: {tuple(train_mfcc.shape)} (loaded from disk)")
+    else:
+        t0 = time.time()
+        train_mfcc, train_y = precompute_mfcc(train_df, extractor, DEVICE,
+                                               batch_size=256, num_workers=args.num_workers,
+                                               audio_root=args.audio_root)
+        print(f"  Train MFCC cache: {tuple(train_mfcc.shape)} in {time.time()-t0:.1f}s")
+        torch.save({"mfcc": train_mfcc, "y": train_y}, train_cache_path)
+        print(f"  Saved train MFCC cache -> {train_cache_path} (resume point if training crashes later)")
+
+    if test_cache_path.exists():
+        print(f"  Found cached test MFCC -> {test_cache_path}, loading instead of recomputing...")
+        cache = torch.load(test_cache_path)
+        test_mfcc, test_y = cache["mfcc"], cache["y"]
+        print(f"  Test MFCC cache : {tuple(test_mfcc.shape)} (loaded from disk)")
+    else:
+        t0 = time.time()
+        test_mfcc, test_y = precompute_mfcc(test_df, extractor, DEVICE,
+                                             batch_size=256, num_workers=args.num_workers,
+                                             audio_root=args.audio_root)
+        print(f"  Test MFCC cache : {tuple(test_mfcc.shape)} in {time.time()-t0:.1f}s")
+        torch.save({"mfcc": test_mfcc, "y": test_y}, test_cache_path)
+        print(f"  Saved test MFCC cache -> {test_cache_path} (resume point if training crashes later)")
 
     train_loader = DataLoader(TensorDataset(train_mfcc, train_y), batch_size=args.batch_size,
                                shuffle=True, num_workers=0, pin_memory=(DEVICE.type == "cuda"))

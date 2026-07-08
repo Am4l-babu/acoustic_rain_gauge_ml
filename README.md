@@ -6,7 +6,7 @@ This project trains a machine learning model to estimate rainfall — whether it
 
 <p align="left">
   <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/status-master%20feature%20store%20(175%20feat)-brightgreen" alt="Status">
+  <img src="https://img.shields.io/badge/status-Stage%208%20complete%20(AUC%200.887%2C%20R²%200.226)-brightgreen" alt="Status">
   <img src="https://img.shields.io/badge/dataset-780%2C725%20audio%20clips-orange" alt="Dataset size">
   <img src="https://img.shields.io/badge/span-Dec%202023%20→%20Jun%202026-lightgrey" alt="Time span">
 </p>
@@ -193,15 +193,28 @@ acoustic_rain_gauge_ml/
   python src/train_dl_model.py --full --models transformer --epochs 40           # full-scale (multi-hour)
   ```
 
-- [ ] **Stage 8 — Master Feature Store & Selection** ([`src/master_feature_extraction.py`](src/master_feature_extraction.py), [`src/feature_selection.py`](src/feature_selection.py)): expands the hand-crafted scalar feature set to **175 features per clip** across 7 families — time-domain/Teager energy, spectral (incl. flux), MFCC, dense mel-band statistics (40 bands × mean/std), wavelet decomposition, histogram-packet rhythm, and onset/tempo — written to chunked, resume-safe Parquet. Supersedes [`src/advanced_feature_extraction.py`](src/advanced_feature_extraction.py) (that script's 5 feature families are all reimplemented here as a superset — run one or the other, not both, since several column names overlap). Fixed two issues found while integrating: (1) the extractor loaded audio at 16kHz, forcing every clip to resample up from its true native 8kHz — pure upsampling that adds no information above the real 4kHz Nyquist limit and cost ~22ms/clip for nothing, so `TARGET_SR` is now 8000; (2) `spectral_contrast`'s default band edges reach past Nyquist at 8kHz and raise a `ParameterError`, fixed by reducing `n_bands` to 3 at low sample rates. `feature_selection.py` then trains a quick XGBoost regressor over the full store and uses SHAP (`TreeExplainer`) to rank every feature by mean |SHAP value|, keeping only the top-N for training — avoids feeding a 175-wide, partly-redundant feature vector straight into a model.
+- [x] **Stage 8 — Master Feature Store & Selection** ([`src/master_feature_extraction.py`](src/master_feature_extraction.py), [`src/feature_selection.py`](src/feature_selection.py), [`src/train_optimized_model.py`](src/train_optimized_model.py)): expands the hand-crafted scalar feature set to **175 features per clip** across 7 families — time-domain/Teager energy, spectral (incl. flux), MFCC, dense mel-band statistics (40 bands × mean/std), wavelet decomposition, histogram-packet rhythm, and onset/tempo — written to chunked, resume-safe Parquet. Supersedes [`src/advanced_feature_extraction.py`](src/advanced_feature_extraction.py) (that script's 5 feature families are all reimplemented here as a superset — run one or the other, not both, since several column names overlap). Fixed while integrating: (1) the extractor loaded audio at 16kHz, forcing every clip to resample up from its true native 8kHz, costing ~22ms/clip for nothing — `TARGET_SR` is now 8000; (2) `spectral_contrast`'s default band edges reach past Nyquist at 8kHz — fixed by reducing `n_bands` to 3 at low sample rates; (3) the dataset scan checked `path.exists()` for all ~780k rows *before* applying `--limit`, so a "smoke test" scanned the whole dataset first — fixed to stop scanning once enough valid clips are found; (4) the default worker count (`cpu_count()-2`, 18 on a 20-core machine) crashed with `DLL load failed... paging file too small` under real memory pressure — lowered to `min(6, cpu_count()-2)`, overridable via `--workers`; (5) `audio_full_path` is an absolute path baked in from whichever drive letter existed at Stage 1 time — now remapped via `--audio-root`/auto-detected drive so a plugged-in HDD getting a different letter on another PC doesn't silently break every file lookup.
+
+  `feature_selection.py` trains a quick XGBoost model over the full store and uses SHAP (`TreeExplainer`) to rank every feature by mean |SHAP value|, keeping only the top-N — with a `--target {rainfall_mm, is_rainy}` flag added after an early finding: ranking features against `rainfall_mm` alone and reusing that list for the classifier actually **hurt** classification (AUC 0.842 vs 0.883 baseline), since the best rainfall-*amount* predictors aren't necessarily the best rain/no-rain discriminators. Each model now gets its own top-30 SHAP-ranked feature set. `train_optimized_model.py` evaluates both on the exact same population and per-campaign chronological split as the Stage 4 baseline (joining onto `data/processed/train.csv`/`test.csv` rather than trusting the standalone optimized Parquet, which lacks split labels and Stage 3's duration/sensor-artifact filters).
 
   ```bash
-  python src/master_feature_extraction.py                # full run, all clips (see ETA below)
-  python src/master_feature_extraction.py --limit 2000    # smoke test / timing pilot first
-  python src/feature_selection.py --top-n 30              # SHAP-rank and keep the best 30
+  python src/master_feature_extraction.py                          # full run, all clips
+  python src/feature_selection.py --top-n 30 --target rainfall_mm  # regression-ranked top-30
+  python src/feature_selection.py --top-n 30 --target is_rainy     # classification-ranked top-30
+  python src/train_optimized_model.py --master-store-dir <dir> \
+      --shap-csv-classifier <is_rainy_csv> --shap-csv-regressor <rainfall_mm_csv>
   ```
 
-  **Measured on this machine (20-core CPU, dataset on a mechanical HDD)**, not guessed: feature compute alone is ~30ms/clip at native 8kHz (vs. ~59ms/clip at the original 16kHz — the sample-rate fix roughly halves compute cost on top of removing the resample). Single-core, full 780,725-clip dataset: **~8h sequential-disk-read case, ~18.5h worst-case random-disk-read case**. Parallelized across 18 worker processes, realistic wall-clock is **~1-2 hours** (measured components extrapolated, not an end-to-end timed run — actual multiprocessing/disk-contention overhead will vary, hence the `--limit` smoke-test flag to calibrate before committing to the full run). Output: ~1.5-3GB of Parquet chunks (comfortably inside the ~30GB free on the dataset drive at time of writing).
+  **Full-scale run completed 2026-07-07** on an i9-13900K (8 workers, Ubuntu): all 780,725 clips in **4.34 hours** (20.0ms/clip — faster than the 31.6ms/clip Windows-based estimate). Output: 157 chunked Parquet files, ~0.77GB total.
+
+  **Result — both models beat the Stage 4 baseline**, evaluated on the identical 607,673/151,927-row split:
+
+  | Model | Metric | Stage 4 baseline | Stage 8 optimized |
+  |---|---|---|---|
+  | Classifier | AUC-ROC | 0.883 | **0.887** |
+  | Regressor | R² | 0.155 | **0.226** (+46% relative) |
+
+  See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the full feature lists, the duplicate-row data quirk found and fixed in `December_2024_rain_data`, and next steps (hurdle-model regressor, Stage 7 DL fusion).
 
 ---
 

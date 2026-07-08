@@ -23,11 +23,11 @@ FILES IN THIS FOLDER
 🔧 SCRIPTS (MUST RUN)
 ─────────────────────────────────────────────────────────────────────────────
 
-2. NEW_PC_SETUP.ps1
+2. Windows\NEW_PC_SETUP.ps1
    ├─ What: Automated setup script for NEW PC
    ├─ When: Run on new PC after connecting HDD
    ├─ Time: ~20 minutes
-   ├─ Command: .\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+   ├─ Command: .\Windows\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
    └─ Does: Copies files, creates venv, installs all dependencies, detects GPU
 
 
@@ -90,8 +90,8 @@ ON NEW PC:
 
 1. Connect HDD to new PC
 2. Open PowerShell as Admin
-3. cd to where you placed NEW_PC_SETUP.ps1 (Desktop, C:\, etc.)
-4. .\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
+3. cd to where you placed NEW_PC_SETUP.ps1's parent folder (Desktop, C:\, etc.)
+4. .\Windows\NEW_PC_SETUP.ps1 -HDD_Drive "E:" -LocalPath "D:\acoustic_rain_gauge_ml"
 5. Wait for: "✅ SETUP COMPLETE! READY TO TRAIN"
 6. Choose training option from STEP_BY_STEP_GUIDE.txt
 

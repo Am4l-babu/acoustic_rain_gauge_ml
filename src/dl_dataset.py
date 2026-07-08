@@ -18,6 +18,8 @@ resulting MFCC tensor in memory -- training epochs then shuffle and index
 that in-memory cache instead of re-reading WAVs from disk.
 """
 
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 import soundfile as sf
@@ -28,13 +30,36 @@ from torch.utils.data import DataLoader, Dataset
 SAMPLE_RATE = 8000
 CLIP_SAMPLES = 80_000  # 10.0s @ 8kHz
 
+# Auto-detected: two levels up from src/ is the HDD root, whether that's a
+# Windows drive letter or a Linux mount point -- same convention as
+# master_feature_extraction.py's resolve_audio_path().
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_AUDIO_ROOT = _PROJECT_ROOT.parent / "arg_dataset_unzip"
+
+
+def resolve_audio_path(raw_path, audio_root):
+    """audio_full_path in train.csv/test.csv was baked in at Stage 1 time on
+    whatever machine/drive-letter/mount-point was current then (e.g.
+    "F:\\arg_dataset_unzip\\..." from Windows). Remap it onto wherever the
+    dataset actually lives now by anchoring on the "arg_dataset_unzip" folder
+    name, so this works whether the HDD is plugged into Windows (drive
+    letter) or Linux (mount point) -- must split on backslash explicitly
+    since PurePosixPath on Linux won't treat it as a separator."""
+    normalized = str(raw_path).replace("\\", "/")
+    parts = normalized.split("/")
+    if "arg_dataset_unzip" in parts:
+        idx = parts.index("arg_dataset_unzip")
+        return str(audio_root.joinpath(*parts[idx + 1:]))
+    return str(raw_path)
+
 
 class WaveformDataset(Dataset):
     """Returns (raw waveform, rainfall_mm) pairs. No feature extraction here --
     that happens batched on GPU in the training loop via MFCCExtractor."""
 
-    def __init__(self, df):
-        self.paths = df["audio_full_path"].tolist()
+    def __init__(self, df, audio_root=None):
+        audio_root = Path(audio_root) if audio_root else DEFAULT_AUDIO_ROOT
+        self.paths = [resolve_audio_path(p, audio_root) for p in df["audio_full_path"]]
         self.targets = df["rainfall_mm"].to_numpy(dtype="float32")
 
     def __len__(self):
@@ -76,7 +101,7 @@ class MFCCExtractor(torch.nn.Module):
 
 
 def precompute_mfcc(df: pd.DataFrame, extractor: "MFCCExtractor", device,
-                     batch_size: int = 256, num_workers: int = 0):
+                     batch_size: int = 256, num_workers: int = 0, audio_root=None):
     """
     Reads every clip in `df` exactly once, in DataFrame order (fast: measured
     ~7.6ms/file sequential vs ~55ms/file random on the source HDD), and
@@ -88,7 +113,7 @@ def precompute_mfcc(df: pd.DataFrame, extractor: "MFCCExtractor", device,
     issues. On Linux, can be increased to 8+ for faster I/O.
     """
     print(f"    Creating DataLoader (num_workers={num_workers})...", flush=True)
-    loader = DataLoader(WaveformDataset(df), batch_size=batch_size, shuffle=False,
+    loader = DataLoader(WaveformDataset(df, audio_root=audio_root), batch_size=batch_size, shuffle=False,
                          num_workers=num_workers)
     print(f"    DataLoader ready, iterating {len(df):,} clips in batches of {batch_size}...", flush=True)
 
