@@ -73,7 +73,7 @@ def evaluate(model, loader) -> dict:
     preds = np.clip(np.concatenate(preds), 0, None)
     targets = np.concatenate(targets)
     return {
-        "rmse": float(mean_squared_error(targets, preds, squared=False)),
+        "rmse": float(mean_squared_error(targets, preds) ** 0.5),
         "mae": float(mean_absolute_error(targets, preds)),
         "r2": float(r2_score(targets, preds)),
     }
@@ -84,6 +84,15 @@ def train_one_model(name: str, train_loader, test_loader, epochs: int, lr: float
 
     model = MODEL_REGISTRY[name]().to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    # Full-scale training does ~30x more optimizer steps per epoch than the
+    # pilot (607K vs 40K rows at the same batch size) with the same fixed lr
+    # -- measured directly: the full Transformer run's test R2 oscillated
+    # between -0.59 and +0.11 across 40 epochs despite train_loss decreasing
+    # smoothly throughout, the signature of a step size too large to stay
+    # stable over that many updates. Cosine decay brings lr toward 0 by the
+    # final epoch regardless of how many steps/epoch, so pilot and full runs
+    # both end up stable rather than only the (fewer-steps) pilot being lucky.
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
     criterion = torch.nn.SmoothL1Loss()
 
     history = []
@@ -103,16 +112,17 @@ def train_one_model(name: str, train_loader, test_loader, epochs: int, lr: float
             loss.backward()
             optimizer.step()
             running_loss += loss.item() * mfcc.size(0)
+        scheduler.step()
 
         train_loss = running_loss / len(train_loader.dataset)
         epoch_time = time.time() - epoch_start
         metrics = evaluate(model, test_loader)
         history.append({"epoch": epoch, "train_loss": train_loss,
-                         "epoch_seconds": epoch_time, **metrics})
+                         "epoch_seconds": epoch_time, "lr": scheduler.get_last_lr()[0], **metrics})
 
         print(f"  Epoch {epoch:3d}/{epochs} | loss={train_loss:.4f} | "
               f"R2={metrics['r2']:.4f} | RMSE={metrics['rmse']:.4f} | "
-              f"MAE={metrics['mae']:.4f} | {epoch_time:.1f}s/epoch")
+              f"MAE={metrics['mae']:.4f} | lr={scheduler.get_last_lr()[0]:.2e} | {epoch_time:.1f}s/epoch")
 
         if epoch == 1:
             eta_min = epoch_time * epochs / 60
@@ -171,7 +181,11 @@ def main():
 
     print("\nPrecomputing MFCC once per split (shared across all architectures)...")
     extractor = MFCCExtractor().to(DEVICE)
-    mode_tag = "full" if not pilot else "pilot"
+    # "_raw" distinguishes these from older cache files computed by the
+    # previous MFCCExtractor, which divided each clip by its own peak value
+    # before caching -- that erased absolute loudness irreversibly, so old
+    # cache files can't be reused/patched, only recomputed from raw audio.
+    mode_tag = ("full" if not pilot else "pilot") + "_raw"
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     train_cache_path = MODELS_DIR / f"mfcc_cache_{mode_tag}_train.pt"
     test_cache_path = MODELS_DIR / f"mfcc_cache_{mode_tag}_test.pt"
@@ -205,6 +219,16 @@ def main():
         print(f"  Test MFCC cache : {tuple(test_mfcc.shape)} in {time.time()-t0:.1f}s")
         torch.save({"mfcc": test_mfcc, "y": test_y}, test_cache_path)
         print(f"  Saved test MFCC cache -> {test_cache_path} (resume point if training crashes later)")
+
+    print("\nApplying global per-coefficient normalization (train-set-derived, no test leakage)...")
+    print("  This replaces the old per-clip peak normalization, which erased the")
+    print("  absolute loudness differences between clips that SHAP found were the")
+    print("  strongest rainfall_mm predictors in the scalar-feature pipeline.")
+    mfcc_mean = train_mfcc.mean(dim=(0, 2), keepdim=True)
+    mfcc_std = train_mfcc.std(dim=(0, 2), keepdim=True).clamp_min(1e-6)
+    train_mfcc = (train_mfcc - mfcc_mean) / mfcc_std
+    test_mfcc = (test_mfcc - mfcc_mean) / mfcc_std
+    print(f"  Per-coefficient mean/std shape: {tuple(mfcc_mean.shape)} (computed once from train, applied to both splits)")
 
     train_loader = DataLoader(TensorDataset(train_mfcc, train_y), batch_size=args.batch_size,
                                shuffle=True, num_workers=0, pin_memory=(DEVICE.type == "cuda"))

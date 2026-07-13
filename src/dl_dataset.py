@@ -81,8 +81,17 @@ class WaveformDataset(Dataset):
 class MFCCExtractor(torch.nn.Module):
     """GPU-batched MFCC, same pattern as data_cleaning_gpu.py's GPUFeatureExtractor.
 
-    Per-clip peak normalization (divide by max abs value) matches SARID's own
-    `librosa.util.normalize` step in data_processing.py.
+    Returns RAW (un-normalized) MFCC. An earlier version divided each clip by
+    its own max abs value (matching SARID's `librosa.util.normalize`), but
+    that erases absolute loudness/energy -- exactly the signal the SHAP
+    ranking on the scalar-feature pipeline identified as the strongest
+    rainfall_mm predictor (mel_band_8_mean, td_peak, td_rms, td_energy all
+    rank in the top 15 of 175 features, and none of those are per-clip
+    normalized). Harder rain hits louder; per-clip peak-normalizing throws
+    that away before the model ever sees it. Global normalization (fixed
+    train-set-derived mean/std, applied identically to every clip) is done
+    once in train_dl_model.py after precompute instead, so relative loudness
+    between clips survives.
     """
 
     def __init__(self, sample_rate: int = SAMPLE_RATE, n_mfcc: int = 40,
@@ -95,10 +104,8 @@ class MFCCExtractor(torch.nn.Module):
 
     @torch.no_grad()
     def forward(self, waveforms: torch.Tensor) -> torch.Tensor:
-        """waveforms: (B, T_samples) -> (B, n_mfcc, T_frames), normalized to [-1, 1]."""
-        mfcc = self.mfcc(waveforms)
-        peak = mfcc.abs().amax(dim=(1, 2), keepdim=True).clamp_min(1e-8)
-        return mfcc / peak
+        """waveforms: (B, T_samples) -> (B, n_mfcc, T_frames), raw scale."""
+        return self.mfcc(waveforms)
 
 
 def precompute_mfcc(df: pd.DataFrame, extractor: "MFCCExtractor", device,

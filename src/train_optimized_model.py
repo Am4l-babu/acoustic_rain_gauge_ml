@@ -161,6 +161,45 @@ def main():
     all_metrics["xgboost_regressor"] = evaluate_regressor(
         "XGBoost regressor (rainfall_mm-ranked SHAP features)", y_test_reg, reg_pred)
 
+    print("\n[7] Hurdle model: regressor trained ONLY on rainy training rows...")
+    train_rainy_mask = y_train_cls == 1
+    test_rainy_mask = y_test_cls == 1
+    print(f"  Rainy training rows: {train_rainy_mask.sum():,} / {len(train_df):,} "
+          f"({train_rainy_mask.mean():.1%})")
+    X_train_rainy = train_df.loc[train_rainy_mask, reg_features].fillna(0)
+    y_train_rainy = y_train_reg[train_rainy_mask]
+    hurdle_reg = XGBRegressor(**XGB_PARAMS)
+    hurdle_reg.fit(X_train_rainy, y_train_rainy)
+
+    # Diagnostic: regressor's own accuracy, evaluated only on truly-rainy test rows
+    # (isolates "how good is the amount model" from "how good is the rain/no-rain gate")
+    X_test_rainy = test_df.loc[test_rainy_mask, reg_features].fillna(0)
+    y_test_rainy = y_test_reg[test_rainy_mask]
+    rainy_only_pred = np.clip(hurdle_reg.predict(X_test_rainy), 0, None)
+    all_metrics["hurdle_regressor_on_rainy_only"] = evaluate_regressor(
+        "Hurdle regressor, evaluated on true-rainy test rows only (diagnostic)",
+        y_test_rainy, rainy_only_pred)
+
+    # Full pipeline: classifier gates whether to predict 0 or run the amount regressor,
+    # evaluated on the whole test set -- this is what's directly comparable to
+    # xgboost_regressor above (same population, same metric).
+    hurdle_full_pred = np.zeros(len(test_df))
+    predicted_rainy_mask = xgb_pred == 1
+    if predicted_rainy_mask.any():
+        X_test_predicted_rainy = test_df.loc[predicted_rainy_mask, reg_features].fillna(0)
+        hurdle_full_pred[predicted_rainy_mask] = np.clip(hurdle_reg.predict(X_test_predicted_rainy), 0, None)
+    all_metrics["hurdle_full_pipeline"] = evaluate_regressor(
+        "Hurdle full pipeline (classifier gate + rain-only regressor), whole test set",
+        y_test_reg, hurdle_full_pred)
+
+    print("\n[8] Soft-gated hurdle: classifier probability * rain-only regressor (all test rows)...")
+    X_test_all_rainy_model = test_df[reg_features].fillna(0)
+    rain_only_pred_all = np.clip(hurdle_reg.predict(X_test_all_rainy_model), 0, None)
+    soft_gated_pred = xgb_proba * rain_only_pred_all
+    all_metrics["hurdle_soft_gated"] = evaluate_regressor(
+        "Soft-gated hurdle (P(rainy) * rain-only regressor), whole test set",
+        y_test_reg, soft_gated_pred)
+
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = DOCS_DIR / "model_evaluation_report_optimized.json"
     with open(out_path, "w") as f:
@@ -169,9 +208,11 @@ def main():
 
     print("\n" + "=" * 68)
     print("  COMPARISON TO STAGE 4 BASELINE (13 hand-picked scalar features)")
-    print(f"  Baseline  : AUC 0.883 | R2 0.155")
-    print(f"  Optimized : AUC {all_metrics['xgboost_classifier']['roc_auc']:.3f} "
+    print(f"  Baseline           : AUC 0.883 | R2 0.155")
+    print(f"  Optimized (single) : AUC {all_metrics['xgboost_classifier']['roc_auc']:.3f} "
           f"| R2 {all_metrics['xgboost_regressor']['r2']:.3f}")
+    print(f"  Hurdle (hard gate) : R2 {all_metrics['hurdle_full_pipeline']['r2']:.3f}")
+    print(f"  Hurdle (soft gate) : R2 {all_metrics['hurdle_soft_gated']['r2']:.3f}")
     print("=" * 68)
 
 
