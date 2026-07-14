@@ -79,8 +79,24 @@ def evaluate(model, loader) -> dict:
     }
 
 
-def train_one_model(name: str, train_loader, test_loader, epochs: int, lr: float) -> dict:
-    print(f"\n{'='*68}\n  Training: MFCC + {name.upper()}\n{'='*68}")
+def train_one_model(name: str, train_loader, test_loader, epochs: int, lr: float,
+                     patience: int | None = None, tag: str | None = None) -> dict:
+    """
+    patience: stop once `patience` epochs have passed with no new best test R2.
+    Added after finding (2026-07-14 retrain) that full-scale training peaks in
+    the first handful of epochs and then overfits monotonically for the rest
+    of a fixed 40-epoch run -- wasting the bulk of every run's compute. A
+    generous default (see CLI) still lets the cosine schedule bring lr most
+    of the way down before quitting, in case a late-epoch recovery genuinely
+    happens under some configs (unconfirmed either way -- this flag exists to
+    let the sweep answer that, not to assume it).
+
+    tag: appended to the saved checkpoint/state-dict filename so multiple
+    hyperparameter combos for the same architecture don't overwrite each
+    other's output (run_sweep.py sets this to something like "lr3e-4_bs256").
+    """
+    print(f"\n{'='*68}\n  Training: MFCC + {name.upper()}"
+          f"{f' [{tag}]' if tag else ''}\n{'='*68}")
 
     model = MODEL_REGISTRY[name]().to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -98,6 +114,8 @@ def train_one_model(name: str, train_loader, test_loader, epochs: int, lr: float
     history = []
     best_r2 = -float("inf")
     best_state = None
+    epochs_since_best = 0
+    stopped_early_at = None
 
     for epoch in range(1, epochs + 1):
         model.train()
@@ -122,24 +140,38 @@ def train_one_model(name: str, train_loader, test_loader, epochs: int, lr: float
 
         print(f"  Epoch {epoch:3d}/{epochs} | loss={train_loss:.4f} | "
               f"R2={metrics['r2']:.4f} | RMSE={metrics['rmse']:.4f} | "
-              f"MAE={metrics['mae']:.4f} | lr={scheduler.get_last_lr()[0]:.2e} | {epoch_time:.1f}s/epoch")
+              f"MAE={metrics['mae']:.4f} | lr={scheduler.get_last_lr()[0]:.2e} | {epoch_time:.1f}s/epoch",
+              flush=True)
 
         if epoch == 1:
             eta_min = epoch_time * epochs / 60
             print(f"  [ETA] first epoch took {epoch_time:.1f}s -> "
-                  f"~{eta_min:.1f} min for all {epochs} epochs of this model")
+                  f"~{eta_min:.1f} min for all {epochs} epochs of this model (before any early stop)",
+                  flush=True)
 
         if metrics["r2"] > best_r2:
             best_r2 = metrics["r2"]
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            epochs_since_best = 0
+        else:
+            epochs_since_best += 1
+            if patience is not None and epochs_since_best >= patience:
+                stopped_early_at = epoch
+                print(f"  [EARLY STOP] no improvement in {patience} epochs "
+                      f"(best R2={best_r2:.4f} at epoch {epoch - patience}) -- stopping at epoch {epoch}",
+                      flush=True)
+                break
 
     model.load_state_dict(best_state)
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), MODELS_DIR / f"dl_{name}_mfcc.pt")
-    print(f"  Saved best checkpoint (R2={best_r2:.4f}): "
-          f"{MODELS_DIR / f'dl_{name}_mfcc.pt'}")
+    suffix = f"_{tag}" if tag else ""
+    ckpt_path = MODELS_DIR / f"dl_{name}_mfcc{suffix}.pt"
+    torch.save(model.state_dict(), ckpt_path)
+    print(f"  Saved best checkpoint (R2={best_r2:.4f}): {ckpt_path}", flush=True)
 
-    return {"model": name, "feature": "mfcc", "best_r2": best_r2, "history": history}
+    return {"model": name, "feature": "mfcc", "best_r2": best_r2, "history": history,
+            "lr": lr, "stopped_early_at": stopped_early_at, "tag": tag,
+            "checkpoint_path": str(ckpt_path)}
 
 
 def main():
@@ -153,6 +185,17 @@ def main():
                          help="Workers for MFCC precompute (0 on Windows, 8 on Linux by default)")
     parser.add_argument("--audio-root", type=str, default=None,
                          help="Override arg_dataset_unzip location (auto-detected from this script's own drive/mount by default)")
+    parser.add_argument("--models-dir", type=str, default=None,
+                         help="Override where MFCC caches and checkpoints are read/written "
+                              "(defaults to REPO_ROOT/models) -- lets a diagnostic run reuse an "
+                              "existing multi-GB cache sitting on another drive without copying it")
+    parser.add_argument("--patience", type=int, default=None,
+                         help="Stop a model's training once this many epochs pass with no new best "
+                              "test R2 (default: no early stopping, always runs all --epochs)")
+    parser.add_argument("--tag", type=str, default=None,
+                         help="Suffix appended to checkpoint/report filenames so multiple "
+                              "hyperparameter combos don't overwrite each other's output "
+                              "(e.g. --tag lr3e-4_bs256)")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--pilot", action="store_true", default=True,
                         help=f"Train on a random {PILOT_TRAIN_N:,}/{PILOT_TEST_N:,} "
@@ -160,6 +203,10 @@ def main():
     group.add_argument("--full", action="store_true",
                         help="Train on the full train/test sets (multi-hour)")
     args = parser.parse_args()
+
+    global MODELS_DIR
+    if args.models_dir:
+        MODELS_DIR = Path(args.models_dir)
 
     if args.num_workers is None:
         args.num_workers = 0 if platform.system() == "Windows" else 8
@@ -239,20 +286,24 @@ def main():
     results = []
     run_start = time.time()
     for name in models_to_run:
-        result = train_one_model(name, train_loader, test_loader, args.epochs, args.lr)
+        result = train_one_model(name, train_loader, test_loader, args.epochs, args.lr,
+                                  patience=args.patience, tag=args.tag)
         results.append(result)
 
-    print(f"\n{'='*68}\n  ABLATION SUMMARY (mode={'pilot' if pilot else 'full'})\n{'='*68}")
-    print(f"  {'Model':<15}{'Feature':<10}{'Best R2':<10}")
+    print(f"\n{'='*68}\n  ABLATION SUMMARY (mode={'pilot' if pilot else 'full'}"
+          f"{f', tag={args.tag}' if args.tag else ''})\n{'='*68}")
+    print(f"  {'Model':<15}{'Feature':<10}{'Best R2':<10}{'Stopped at':<12}")
     for r in results:
-        print(f"  {r['model']:<15}{r['feature']:<10}{r['best_r2']:<10.4f}")
+        print(f"  {r['model']:<15}{r['feature']:<10}{r['best_r2']:<10.4f}{str(r['stopped_early_at']):<12}")
     print(f"  Baseline (Stage 4 XGBoost regressor): R2=0.155")
     print(f"  Total wall time: {(time.time() - run_start)/60:.1f} min")
 
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
-    out_name = "dl_ablation_pilot_report.json" if pilot else "dl_ablation_full_report.json"
+    suffix = f"_{args.tag}" if args.tag else ""
+    out_name = f"dl_ablation_{'pilot' if pilot else 'full'}_report{suffix}.json"
     with open(DOCS_DIR / out_name, "w") as f:
-        json.dump({"mode": "pilot" if pilot else "full", "results": results}, f, indent=2)
+        json.dump({"mode": "pilot" if pilot else "full", "tag": args.tag,
+                    "lr": args.lr, "batch_size": args.batch_size, "results": results}, f, indent=2)
     print(f"  Saved: {DOCS_DIR / out_name}")
 
 
