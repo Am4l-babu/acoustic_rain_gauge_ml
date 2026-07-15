@@ -41,12 +41,15 @@ Phase 3 -- Ensemble refresh:
   search), and overwrites the production ensemble artifacts if the result
   beats the current one -- never overwrites with something worse.
 
-Run (from the repo root, on the machine with the HDD attached):
-    python3 src/run_sweep.py \\
-        --master-store-dir /media/icfoss/E-HDD/master_feature_store \\
-        --shap-csv-regressor /media/icfoss/E-HDD/feature_importance_shap.csv \\
-        --shap-csv-classifier /media/icfoss/E-HDD/feature_importance_shap_is_rainy.csv \\
-        --dl-models-dir /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models
+Run (from the repo root on the HDD -- all paths auto-detected from the
+repo's own location, same convention as dl_dataset.py / master_feature_
+extraction.py, so no arguments are needed when the standard HDD layout is
+in place):
+    cd /media/icfoss/E-HDD/acoustic_rain_gauge_ml
+    python3 src/run_sweep.py
+
+Explicit overrides are available (--master-store-dir, --shap-csv-regressor,
+--shap-csv-classifier, --dl-models-dir) for non-standard layouts.
 
 Safe to Ctrl-C and re-run later -- it will skip everything already recorded
 in docs/sweep_progress.json.
@@ -69,6 +72,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data" / "processed"
 DOCS_DIR = REPO_ROOT / "docs"
 PROGRESS_PATH = DOCS_DIR / "sweep_progress.json"
+
+# The HDD layout puts the repo alongside its data siblings
+# (master_feature_store, the SHAP CSVs, arg_dataset_unzip) under one root --
+# whether that root is /media/icfoss/E-HDD on Linux or F:\ on Windows.
+HDD_ROOT = REPO_ROOT.parent
 
 PYTHON = sys.executable
 
@@ -414,30 +422,64 @@ def run_ensemble_phase(progress, args, train_df, test_df):
 
     y_all = combined["rainfall_mm"].to_numpy()
     is_rainy = combined["is_rainy"].to_numpy()
-    feature_cols = ["cnn_pred", "lstm_pred", "transformer_pred", "xgb_pred", "xgb_proba"]
-    X_all = combined[feature_cols].to_numpy()
 
+    def stack_oof_r2(feature_cols, params):
+        X = combined[feature_cols].to_numpy()
+        oof = np.zeros(len(y_all))
+        kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        for tr_idx, val_idx in kfold.split(X, is_rainy):
+            m = XGBRegressor(**params)
+            m.fit(X[tr_idx], y_all[tr_idx])
+            oof[val_idx] = np.clip(m.predict(X[val_idx]), 0, None)
+        return r2_score(y_all, oof)
+
+    BASE_PARAMS = dict(n_estimators=200, max_depth=3, learning_rate=0.05,
+                        subsample=0.8, colsample_bytree=0.8, random_state=42, n_jobs=-1)
+
+    # --- 3a: which SUBSET of the 5 signals should the stacker see? ---
+    # Never swept before (production always used all 5). Cheap to answer
+    # here, and genuinely open: e.g. the LSTM is the weakest input -- does
+    # dropping it help or does the stacker already learn to down-weight it?
+    SUBSETS = {
+        "all5":               ["cnn_pred", "lstm_pred", "transformer_pred", "xgb_pred", "xgb_proba"],
+        "no_lstm":            ["cnn_pred", "transformer_pred", "xgb_pred", "xgb_proba"],
+        "no_proba":           ["cnn_pred", "lstm_pred", "transformer_pred", "xgb_pred"],
+        "dl_only":            ["cnn_pred", "lstm_pred", "transformer_pred"],
+        "dl_plus_proba":      ["cnn_pred", "lstm_pred", "transformer_pred", "xgb_proba"],
+        "cnn_xgb_proba_prev": ["cnn_pred", "xgb_pred", "xgb_proba"],
+        "cnn_xgb":            ["cnn_pred", "xgb_pred"],
+        "scalar_only":        ["xgb_pred", "xgb_proba"],
+    }
+    log("  [3a] Stacker input-subset sweep (base params, 5-fold OOF each)...")
+    subset_results = {}
+    for sname, cols in SUBSETS.items():
+        r2 = stack_oof_r2(cols, BASE_PARAMS)
+        subset_results[sname] = {"features": cols, "r2": r2}
+        log(f"    {sname:22s} ({len(cols)} inputs) -> R2={r2:.4f}")
+        progress["ensemble"].setdefault("subsets", {})[sname] = subset_results[sname]
+        save_progress(progress)
+    best_subset = max(subset_results, key=lambda s: subset_results[s]["r2"])
+    feature_cols = subset_results[best_subset]["features"]
+    log(f"  Best subset: {best_subset} (R2={subset_results[best_subset]['r2']:.4f})")
+
+    # --- 3b: hyperparameter search on the winning subset ---
+    log("  [3b] Stacker hyperparameter search on the winning subset...")
     param_grid = {"n_estimators": [100, 200, 300, 400], "max_depth": [2, 3, 4, 5],
                   "learning_rate": [0.02, 0.05, 0.08, 0.12], "subsample": [0.7, 0.8, 0.9, 1.0],
                   "colsample_bytree": [0.6, 0.8, 1.0]}
     sampler = list(ParameterSampler(param_grid, n_iter=12, random_state=42))
-    best_stack_params, best_stack_r2 = None, -float("inf")
+    best_stack_params, best_stack_r2 = dict(BASE_PARAMS), subset_results[best_subset]["r2"]
     for params in sampler:
         full_params = {**params, "random_state": 42, "n_jobs": -1}
-        oof = np.zeros(len(y_all))
-        kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        for tr_idx, val_idx in kfold.split(X_all, is_rainy):
-            m = XGBRegressor(**full_params)
-            m.fit(X_all[tr_idx], y_all[tr_idx])
-            oof[val_idx] = np.clip(m.predict(X_all[val_idx]), 0, None)
-        r2 = r2_score(y_all, oof)
+        r2 = stack_oof_r2(feature_cols, full_params)
         log(f"    stack params {params} -> 5-fold OOF R2={r2:.4f}")
         if r2 > best_stack_r2:
             best_stack_r2, best_stack_params = r2, full_params
 
-    log(f"  Best refreshed ensemble: 5-fold OOF R2={best_stack_r2:.4f}")
+    log(f"  Best refreshed ensemble: subset={best_subset}, 5-fold OOF R2={best_stack_r2:.4f}")
     progress["ensemble"]["refreshed"] = {
         "r2": best_stack_r2, "params": best_stack_params, "features": feature_cols,
+        "subset": best_subset,
         "dl_checkpoints": {a: best_dl[a]["checkpoint_path"] for a in ["cnn", "lstm", "transformer"]},
         "xgb_regressor_features": best_reg["features"], "xgb_classifier_features": best_clf["features"],
         "xgb_regressor_params": best_reg["params"], "xgb_classifier_params": best_clf["params"],
@@ -471,7 +513,7 @@ def run_ensemble_phase(progress, args, train_df, test_df):
                     "classifier_features": best_clf["features"]}, f, indent=2)
 
     final_stacker = XGBRegressor(**best_stack_params)
-    final_stacker.fit(X_all, y_all)
+    final_stacker.fit(combined[feature_cols].to_numpy(), y_all)
     final_stacker.save_model(str(models_dir / "ensemble_stacker.json"))
     with open(models_dir / "ensemble_stacker_config.json", "w") as f:
         json.dump({"type": "learned_stack", "features": feature_cols,
@@ -491,12 +533,48 @@ def run_ensemble_phase(progress, args, train_df, test_df):
 # MAIN
 # ============================================================
 
+def preflight(args):
+    """Fail fast, before any training starts, if a required input is missing --
+    an unattended overnight run must not discover a bad path 3 hours in."""
+    problems = []
+    checks = [
+        ("master feature store", Path(args.master_store_dir),
+         lambda p: p.is_dir() and any(p.glob("master_chunk_*.parquet"))),
+        ("SHAP regressor CSV", Path(args.shap_csv_regressor), Path.is_file),
+        ("SHAP classifier CSV", Path(args.shap_csv_classifier), Path.is_file),
+        ("train.csv", DATA_DIR / "train.csv", Path.is_file),
+        ("test.csv", DATA_DIR / "test.csv", Path.is_file),
+        ("full train MFCC cache", Path(args.dl_models_dir) / "mfcc_cache_full_raw_train.pt", Path.is_file),
+        ("full test MFCC cache", Path(args.dl_models_dir) / "mfcc_cache_full_raw_test.pt", Path.is_file),
+    ]
+    for name, path, ok in checks:
+        if not ok(path):
+            problems.append(f"  MISSING {name}: {path}")
+    try:
+        import torch
+    except ImportError:
+        torch = None
+        problems.append("  torch is not importable in this Python environment")
+    if problems:
+        log("PREFLIGHT FAILED -- nothing was run. Fix these and retry:")
+        for p in problems:
+            log(p)
+        sys.exit(1)
+    log(f"Preflight OK. CUDA available: {torch.cuda.is_available()}"
+        + (f" ({torch.cuda.get_device_name(0)})" if torch.cuda.is_available() else
+           " -- WARNING: Phase 1/3 will be very slow on CPU"))
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--master-store-dir", type=str, required=True)
-    ap.add_argument("--shap-csv-regressor", type=str, required=True)
-    ap.add_argument("--shap-csv-classifier", type=str, required=True)
-    ap.add_argument("--dl-models-dir", type=str, required=True)
+    ap.add_argument("--master-store-dir", type=str,
+                    default=str(HDD_ROOT / "master_feature_store"))
+    ap.add_argument("--shap-csv-regressor", type=str,
+                    default=str(HDD_ROOT / "feature_importance_shap.csv"))
+    ap.add_argument("--shap-csv-classifier", type=str,
+                    default=str(HDD_ROOT / "feature_importance_shap_is_rainy.csv"))
+    ap.add_argument("--dl-models-dir", type=str,
+                    default=str(REPO_ROOT / "models"))
     ap.add_argument("--skip-dl", action="store_true", help="Skip Phase 1 (use existing progress)")
     ap.add_argument("--skip-xgb", action="store_true", help="Skip Phase 2 (use existing progress)")
     ap.add_argument("--skip-ensemble", action="store_true", help="Skip Phase 3")
@@ -504,7 +582,11 @@ def main():
 
     start = time.time()
     log("OVERNIGHT SWEEP STARTING")
-    log(f"Progress file: {PROGRESS_PATH} (delete it to force a full restart)")
+    log(f"Repo root       : {REPO_ROOT}")
+    log(f"Master store    : {args.master_store_dir}")
+    log(f"DL models dir   : {args.dl_models_dir}")
+    log(f"Progress file   : {PROGRESS_PATH} (delete it to force a full restart)")
+    preflight(args)
     progress = load_progress()
 
     try:
