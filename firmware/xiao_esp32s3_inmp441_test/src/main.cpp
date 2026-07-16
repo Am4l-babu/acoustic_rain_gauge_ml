@@ -45,17 +45,25 @@
  *                           stereo WAV and prints/plots a feature-by-
  *                           feature comparison. Also requires
  *                           wifi_config.h.
+ *   MODE_DUAL_LEVEL_METER (4) - same two sensors as MODE_DUAL_COMPARE
+ *                           (INMP441 + analog module), but prints RMS/peak
+ *                           dBFS for both, side by side, over Serial only --
+ *                           no Wi-Fi, no wifi_config.h, no Python side.
+ *                           Use this for a quick "are both mics alive"
+ *                           check right after wiring, before bothering
+ *                           with the full MODE_DUAL_COMPARE pipeline.
  */
 
 #include <Arduino.h>
 #include <driver/i2s.h>
 #include <math.h>
 
-#define MODE_LEVEL_METER  0
-#define MODE_RAW_STREAM   1
-#define MODE_WIFI_STREAM  2
-#define MODE_DUAL_COMPARE 3
-#define CAPTURE_MODE MODE_LEVEL_METER
+#define MODE_LEVEL_METER      0
+#define MODE_RAW_STREAM       1
+#define MODE_WIFI_STREAM      2
+#define MODE_DUAL_COMPARE     3
+#define MODE_DUAL_LEVEL_METER 4
+#define CAPTURE_MODE MODE_DUAL_LEVEL_METER
 
 #if CAPTURE_MODE == MODE_WIFI_STREAM || CAPTURE_MODE == MODE_DUAL_COMPARE
 #include <WiFi.h>
@@ -77,6 +85,7 @@
 #define DMA_BUF_LEN   256                       // samples per DMA buffer
 #define READ_SAMPLES  DMA_BUF_LEN                // int32_t words per i2s_read() call
 #define FULL_SCALE_24BIT 8388608.0f              // 2^23, INMP441 full scale
+#define FULL_SCALE_12BIT 2048.0f                 // ADC swing around the ~2048 (Vref/2) center point
 
 static int32_t i2s_buf[READ_SAMPLES];
 
@@ -165,6 +174,15 @@ void setup() {
   pinMode(COMPARATOR_PIN, INPUT);
   ensure_wifi();
   ensure_server();
+#elif CAPTURE_MODE == MODE_DUAL_LEVEL_METER
+  delay(1500);
+  Serial.println();
+  Serial.println("XIAO ESP32-S3 -- dual-mic level meter (INMP441 vs analog module, Serial only)");
+  Serial.printf("Sample rate: %d Hz | I2S pins SCK=%d WS=%d SD=%d | Analog pin=%d\n",
+                SAMPLE_RATE, I2S_SCK_PIN, I2S_WS_PIN, I2S_SD_PIN, ANALOG_MIC_PIN);
+  analogReadResolution(12);                       // 0-4095 over 0-3.3V
+  analogSetPinAttenuation(ANALOG_MIC_PIN, ADC_11db);
+  pinMode(COMPARATOR_PIN, INPUT);
 #endif
   i2s_install();
 }
@@ -228,5 +246,41 @@ void loop() {
   ensure_wifi();
   ensure_server();
   send_all((const uint8_t *)stereo, samples * 2 * sizeof(int16_t));
+
+#elif CAPTURE_MODE == MODE_DUAL_LEVEL_METER
+  // Same per-sample interleaving idea as MODE_DUAL_COMPARE (I2S DMA block,
+  // then one analogRead() per sample right after), but reduced to RMS/peak
+  // dBFS for each sensor instead of streaming raw PCM anywhere -- a
+  // Serial-only sanity check that both mics respond to sound at all.
+  int64_t i2s_sum_sq = 0;
+  int32_t i2s_peak = 0;
+  int64_t an_sum_sq = 0;
+  int32_t an_peak = 0;
+  int32_t an_min = 4095;
+  int32_t an_max = 0;
+  for (int i = 0; i < samples; i++) {
+    int32_t s24 = i2s_buf[i] >> 8;              // arithmetic shift: sign-extends the 24-bit sample
+    i2s_sum_sq += (int64_t)s24 * (int64_t)s24;
+    int32_t a = s24 < 0 ? -s24 : s24;
+    if (a > i2s_peak) i2s_peak = a;
+
+    int adc_raw = analogRead(ANALOG_MIC_PIN);   // 0-4095 over 0-3.3V, ~10-20us
+    if (adc_raw < an_min) an_min = adc_raw;
+    if (adc_raw > an_max) an_max = adc_raw;
+    int32_t centered = adc_raw - 2048;
+    an_sum_sq += (int64_t)centered * (int64_t)centered;
+    int32_t an_a = centered < 0 ? -centered : centered;
+    if (an_a > an_peak) an_peak = an_a;
+  }
+  float i2s_rms = sqrtf((float)((double)i2s_sum_sq / samples));
+  float i2s_rms_dbfs  = 20.0f * log10f(i2s_rms / FULL_SCALE_24BIT + 1e-9f);
+  float i2s_peak_dbfs = 20.0f * log10f((float)i2s_peak / FULL_SCALE_24BIT + 1e-9f);
+
+  float an_rms = sqrtf((float)((double)an_sum_sq / samples));
+  float an_rms_dbfs  = 20.0f * log10f(an_rms / FULL_SCALE_12BIT + 1e-9f);
+  float an_peak_dbfs = 20.0f * log10f((float)an_peak / FULL_SCALE_12BIT + 1e-9f);
+
+  Serial.printf("INMP441 RMS: %6.1f dBFS  Peak: %6.1f dBFS   |   Analog RMS: %6.1f dBFS  Peak: %6.1f dBFS   Raw: %4d..%4d   (n=%d)\n",
+                i2s_rms_dbfs, i2s_peak_dbfs, an_rms_dbfs, an_peak_dbfs, an_min, an_max, samples);
 #endif
 }

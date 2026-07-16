@@ -30,6 +30,9 @@ external_repos/
 docs/**/*.txt
 docs/train_*_log.txt
 
+# PlatformIO build artifacts
+firmware/**/.pio/
+
 # Wi-Fi credentials for the deployed sensor node (copy from wifi_config.h.example)
 firmware/**/include/wifi_config.h
 
