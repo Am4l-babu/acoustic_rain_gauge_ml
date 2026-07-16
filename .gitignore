@@ -29,3 +29,11 @@ external_repos/
 *.parquet
 docs/**/*.txt
 docs/train_*_log.txt
+
+# Wi-Fi credentials for the deployed sensor node (copy from wifi_config.h.example)
+firmware/**/include/wifi_config.h
+
+# Research papers and reference materials (large PDFs/docx/zip archives)
+ARG_Research/*.pdf
+ARG_Research/*.docx
+ARG_Research/*.zip

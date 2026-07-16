@@ -53,8 +53,8 @@ Every monthly batch of recordings goes through the same five-step pipeline:
 
 Two interchangeable implementations exist for step 4:
 
-- **[`data_cleaning.py`](src/data_cleaning.py)** — CPU pipeline. A `multiprocessing.Pool` of 16 workers extracts features with `librosa`/`soundfile`. This is the version the full dataset was actually processed with.
-- **[`data_cleaning_gpu.py`](src/data_cleaning_gpu.py)** — experimental GPU pipeline. Batches waveforms onto CUDA and computes every feature as a single vectorized `torchaudio` pass (spectrogram → centroid/bandwidth/rolloff/MFCC), aiming for a 4-8x speedup over CPU. Not yet used for a production run.
+- **[`data_cleaning.py`](src/features/data_cleaning.py)** — CPU pipeline. A `multiprocessing.Pool` of 16 workers extracts features with `librosa`/`soundfile`. This is the version the full dataset was actually processed with.
+- **[`data_cleaning_gpu.py`](src/features/data_cleaning_gpu.py)** — experimental GPU pipeline. Batches waveforms onto CUDA and computes every feature as a single vectorized `torchaudio` pass (spectrogram → centroid/bandwidth/rolloff/MFCC), aiming for a 4-8x speedup over CPU. Not yet used for a production run.
 
 ---
 
@@ -167,18 +167,18 @@ acoustic_rain_gauge_ml/
 
 - [x] **Stage 1 — Data Cleaning**: discover, timestamp, align, extract features, resume-safe — *done, 780,725 clips processed*
 - [x] **Stage 2 — Exploratory Data Analysis** ([`notebooks/eda.ipynb`](notebooks/eda.ipynb)): combined all monthly CSVs, plotted rainfall & feature distributions, correlation heatmap, rainy-vs-dry comparisons — *surfaced the duration confound noted below*
-- [x] **Stage 3 — Feature Engineering** ([`src/feature_extraction.py`](src/feature_extraction.py)): dropped the confounded short clips, filtered 204 rows of a repeating ~655mm sensor artifact (see below), split chronologically **per recording campaign** (a single global time cutoff was tried first and produced a severe train/test rainy-rate mismatch — 8.9% vs 39.4% — since campaigns like Feb-Mar 2026 are ~93% rainy; per-campaign splitting fixed it to 15.1% / 14.6%), computed class weights, fit a scaler on train only
-- [x] **Stage 4 — Model Training** ([`src/train_model.py`](src/train_model.py)): Logistic Regression baseline, XGBoost rain/no-rain classifier (**AUC-ROC 0.883**, recall 0.76, precision 0.46), XGBoost regressor for rainfall amount (**R² 0.155**) — confusion matrix and feature-importance chart in [`docs/`](docs/); `mfcc_2` is the single most important feature for rain detection
-- [x] **Stage 5 — Evaluation** ([`src/evaluate_model.py`](src/evaluate_model.py)): per-campaign breakdown showed the weak Stage 4 precision was mostly a **threshold problem, not a modeling one** — raising the decision threshold from 0.5 to ~0.78 lifts precision 0.46 → 0.70 at a recall cost of 0.76 → 0.62, no retraining needed; error analysis found false positives are acoustically loud non-rain sounds (elevated `spectral_rolloff`/`peak`) that resemble rain; a light train-only-validated hyperparameter search improved test AUC 0.883 → **0.893**
-- [x] **Stage 6 — Real-Time Inference** ([`src/predict.py`](src/predict.py)): scores a single WAV clip end-to-end — extracts the same features used in training, classifies at the Stage 5 tuned threshold (read live from `docs/stage5_evaluation_report.json`, not hardcoded), estimates rainfall in mm, and flags predictions as out-of-distribution if the clip isn't `10-15s`
+- [x] **Stage 3 — Feature Engineering** ([`src/features/feature_extraction.py`](src/features/feature_extraction.py)): dropped the confounded short clips, filtered 204 rows of a repeating ~655mm sensor artifact (see below), split chronologically **per recording campaign** (a single global time cutoff was tried first and produced a severe train/test rainy-rate mismatch — 8.9% vs 39.4% — since campaigns like Feb-Mar 2026 are ~93% rainy; per-campaign splitting fixed it to 15.1% / 14.6%), computed class weights, fit a scaler on train only
+- [x] **Stage 4 — Model Training** ([`src/training/train_model.py`](src/training/train_model.py)): Logistic Regression baseline, XGBoost rain/no-rain classifier (**AUC-ROC 0.883**, recall 0.76, precision 0.46), XGBoost regressor for rainfall amount (**R² 0.155**) — confusion matrix and feature-importance chart in [`docs/`](docs/); `mfcc_2` is the single most important feature for rain detection
+- [x] **Stage 5 — Evaluation** ([`src/evaluation/evaluate_model.py`](src/evaluation/evaluate_model.py)): per-campaign breakdown showed the weak Stage 4 precision was mostly a **threshold problem, not a modeling one** — raising the decision threshold from 0.5 to ~0.78 lifts precision 0.46 → 0.70 at a recall cost of 0.76 → 0.62, no retraining needed; error analysis found false positives are acoustically loud non-rain sounds (elevated `spectral_rolloff`/`peak`) that resemble rain; a light train-only-validated hyperparameter search improved test AUC 0.883 → **0.893**
+- [x] **Stage 6 — Real-Time Inference** ([`src/inference/predict.py`](src/inference/predict.py)): scores a single WAV clip end-to-end — extracts the same features used in training, classifies at the Stage 5 tuned threshold (read live from `docs/reports/stage5_evaluation_report.json`, not hardcoded), estimates rainfall in mm, and flags predictions as out-of-distribution if the clip isn't `10-15s`
 
   ```bash
-  python src/predict.py path/to/clip.wav                # tuned threshold + mm estimate
-  python src/predict.py path/to/clip.wav --threshold 0.5 # override the operating threshold
-  python src/predict.py path/to/clip.wav --no-mm         # classification only
+  python src/inference/predict.py path/to/clip.wav                # tuned threshold + mm estimate
+  python src/inference/predict.py path/to/clip.wav --threshold 0.5 # override the operating threshold
+  python src/inference/predict.py path/to/clip.wav --no-mm         # classification only
   ```
 
-- [x] **Stage 7 — Deep Learning Ablation** ([`src/train_dl_model.py`](src/train_dl_model.py), pilot complete; full-scale training pending): the Stage 4 regressor (R²=0.155) was weak because XGBoost was fed *time-averaged* MFCC means — a single scalar per coefficient — discarding all temporal structure within a clip. Reimplemented the SARID paper's feature×architecture ablation (their code has unfilled template placeholders and shape bugs, so it wasn't reusable as-is): a GPU-batched MFCC extractor ([`src/dl_dataset.py`](src/dl_dataset.py)) feeds the full `(40, 157)` time-series into a CNN, LSTM, and Transformer regressor ([`src/dl_models.py`](src/dl_models.py)), one clip's MFCC precomputed once and cached in memory (source audio lives on a mechanical HDD — random-order reads measured 7.3× slower than sequential, making per-epoch on-the-fly loading infeasible). Pilot run (40,000 train / 10,000 test rows, 20 epochs each) confirmed the hypothesis — every architecture beat the baseline by 1.7-2.2×:
+- [x] **Stage 7 — Deep Learning Ablation** ([`src/training/train_dl_model.py`](src/training/train_dl_model.py), pilot complete; full-scale training pending): the Stage 4 regressor (R²=0.155) was weak because XGBoost was fed *time-averaged* MFCC means — a single scalar per coefficient — discarding all temporal structure within a clip. Reimplemented the SARID paper's feature×architecture ablation (their code has unfilled template placeholders and shape bugs, so it wasn't reusable as-is): a GPU-batched MFCC extractor ([`src/dl/dl_dataset.py`](src/dl/dl_dataset.py)) feeds the full `(40, 157)` time-series into a CNN, LSTM, and Transformer regressor ([`src/dl/dl_models.py`](src/dl/dl_models.py)), one clip's MFCC precomputed once and cached in memory (source audio lives on a mechanical HDD — random-order reads measured 7.3× slower than sequential, making per-epoch on-the-fly loading infeasible). Pilot run (40,000 train / 10,000 test rows, 20 epochs each) confirmed the hypothesis — every architecture beat the baseline by 1.7-2.2×:
 
   | Model | Best R² | vs. baseline (0.155) |
   |---|---|---|
@@ -189,19 +189,19 @@ acoustic_rain_gauge_ml/
   See [`docs/PROGRESS.md`](docs/PROGRESS.md) for full pilot metrics, timing, and the next decision point (mid-scale vs. full 607K-row training run, ETA ~2-3h vs. ~9-10h on a mechanical HDD).
 
   ```bash
-  python src/train_dl_model.py --pilot --models cnn,lstm,transformer --epochs 20  # pilot (fast)
-  python src/train_dl_model.py --full --models transformer --epochs 40           # full-scale (multi-hour)
+  python src/training/train_dl_model.py --pilot --models cnn,lstm,transformer --epochs 20  # pilot (fast)
+  python src/training/train_dl_model.py --full --models transformer --epochs 40           # full-scale (multi-hour)
   ```
 
-- [x] **Stage 8 — Master Feature Store & Selection** ([`src/master_feature_extraction.py`](src/master_feature_extraction.py), [`src/feature_selection.py`](src/feature_selection.py), [`src/train_optimized_model.py`](src/train_optimized_model.py)): expands the hand-crafted scalar feature set to **175 features per clip** across 7 families — time-domain/Teager energy, spectral (incl. flux), MFCC, dense mel-band statistics (40 bands × mean/std), wavelet decomposition, histogram-packet rhythm, and onset/tempo — written to chunked, resume-safe Parquet. Supersedes [`src/advanced_feature_extraction.py`](src/advanced_feature_extraction.py) (that script's 5 feature families are all reimplemented here as a superset — run one or the other, not both, since several column names overlap). Fixed while integrating: (1) the extractor loaded audio at 16kHz, forcing every clip to resample up from its true native 8kHz, costing ~22ms/clip for nothing — `TARGET_SR` is now 8000; (2) `spectral_contrast`'s default band edges reach past Nyquist at 8kHz — fixed by reducing `n_bands` to 3 at low sample rates; (3) the dataset scan checked `path.exists()` for all ~780k rows *before* applying `--limit`, so a "smoke test" scanned the whole dataset first — fixed to stop scanning once enough valid clips are found; (4) the default worker count (`cpu_count()-2`, 18 on a 20-core machine) crashed with `DLL load failed... paging file too small` under real memory pressure — lowered to `min(6, cpu_count()-2)`, overridable via `--workers`; (5) `audio_full_path` is an absolute path baked in from whichever drive letter existed at Stage 1 time — now remapped via `--audio-root`/auto-detected drive so a plugged-in HDD getting a different letter on another PC doesn't silently break every file lookup.
+- [x] **Stage 8 — Master Feature Store & Selection** ([`src/features/master_feature_extraction.py`](src/features/master_feature_extraction.py), [`src/features/feature_selection.py`](src/features/feature_selection.py), [`src/training/train_optimized_model.py`](src/training/train_optimized_model.py)): expands the hand-crafted scalar feature set to **175 features per clip** across 7 families — time-domain/Teager energy, spectral (incl. flux), MFCC, dense mel-band statistics (40 bands × mean/std), wavelet decomposition, histogram-packet rhythm, and onset/tempo — written to chunked, resume-safe Parquet. Supersedes [`src/features/advanced_feature_extraction.py`](src/features/advanced_feature_extraction.py) (that script's 5 feature families are all reimplemented here as a superset — run one or the other, not both, since several column names overlap). Fixed while integrating: (1) the extractor loaded audio at 16kHz, forcing every clip to resample up from its true native 8kHz, costing ~22ms/clip for nothing — `TARGET_SR` is now 8000; (2) `spectral_contrast`'s default band edges reach past Nyquist at 8kHz — fixed by reducing `n_bands` to 3 at low sample rates; (3) the dataset scan checked `path.exists()` for all ~780k rows *before* applying `--limit`, so a "smoke test" scanned the whole dataset first — fixed to stop scanning once enough valid clips are found; (4) the default worker count (`cpu_count()-2`, 18 on a 20-core machine) crashed with `DLL load failed... paging file too small` under real memory pressure — lowered to `min(6, cpu_count()-2)`, overridable via `--workers`; (5) `audio_full_path` is an absolute path baked in from whichever drive letter existed at Stage 1 time — now remapped via `--audio-root`/auto-detected drive so a plugged-in HDD getting a different letter on another PC doesn't silently break every file lookup.
 
   `feature_selection.py` trains a quick XGBoost model over the full store and uses SHAP (`TreeExplainer`) to rank every feature by mean |SHAP value|, keeping only the top-N — with a `--target {rainfall_mm, is_rainy}` flag added after an early finding: ranking features against `rainfall_mm` alone and reusing that list for the classifier actually **hurt** classification (AUC 0.842 vs 0.883 baseline), since the best rainfall-*amount* predictors aren't necessarily the best rain/no-rain discriminators. Each model now gets its own top-30 SHAP-ranked feature set. `train_optimized_model.py` evaluates both on the exact same population and per-campaign chronological split as the Stage 4 baseline (joining onto `data/processed/train.csv`/`test.csv` rather than trusting the standalone optimized Parquet, which lacks split labels and Stage 3's duration/sensor-artifact filters).
 
   ```bash
-  python src/master_feature_extraction.py                          # full run, all clips
-  python src/feature_selection.py --top-n 30 --target rainfall_mm  # regression-ranked top-30
-  python src/feature_selection.py --top-n 30 --target is_rainy     # classification-ranked top-30
-  python src/train_optimized_model.py --master-store-dir <dir> \
+  python src/features/master_feature_extraction.py                          # full run, all clips
+  python src/features/feature_selection.py --top-n 30 --target rainfall_mm  # regression-ranked top-30
+  python src/features/feature_selection.py --top-n 30 --target is_rainy     # classification-ranked top-30
+  python src/training/train_optimized_model.py --master-store-dir <dir> \
       --shap-csv-classifier <is_rainy_csv> --shap-csv-regressor <rainfall_mm_csv>
   ```
 
@@ -227,16 +227,16 @@ python -m venv .venv
 pip install -r requirements.txt
 
 # 2. Sanity-check the pipeline on a small sample
-python src/dry_run_test.py
+python tests/dry_run_test.py
 
 # 3. Run the full cleaning pipeline (CPU)
-python src/data_cleaning.py
+python src/features/data_cleaning.py
 
 # (Optional) GPU-accelerated version — requires torch + torchaudio
-python src/data_cleaning_gpu.py
+python src/features/data_cleaning_gpu.py
 
 # 4. Inspect dataset structure/health
-python src/analyze_dataset_v2.py
+python src/evaluation/analyze_dataset_v2.py
 ```
 
 > Source and destination drive paths are currently hardcoded at the top of each script (`SOURCE_DRIVE`, `DESTINATION_DRIVE`) — update them for your own machine before running.

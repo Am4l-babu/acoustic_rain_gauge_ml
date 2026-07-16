@@ -1,0 +1,198 @@
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 6 --output-dir /tmp/test6                                                                        (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test6
+Workers          : 6
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 6 workers...
+
+Chunk 1/1...
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:41<00:00, 47.87it/s]
+Saved 2000/2000 records -> master_chunk_001.parquet
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.01h (20.9 ms/clip)
+Output: /tmp/test6
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 10 --output-dir /tmp/test10                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test10
+Workers          : 10
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 10 workers...
+
+Chunk 1/1...
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:41<00:00, 47.97it/s]
+Saved 2000/2000 records -> master_chunk_001.parquet
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.01h (20.9 ms/clip)
+Output: /tmp/test10
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 12 --output-dir /tmp/test12                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test12
+Workers          : 12
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 12 workers...
+
+Chunk 1/1...
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:43<00:00, 46.23it/s]
+Saved 2000/2000 records -> master_chunk_001.parquet
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.01h (21.7 ms/clip)
+Output: /tmp/test12
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 16 --output-dir /tmp/test16                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test16
+Workers          : 16
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 16 workers...
+
+Chunk 1/1...
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:48<00:00, 40.87it/s]
+Saved 2000/2000 records -> master_chunk_001.parquet
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.01h (24.5 ms/clip)
+Output: /tmp/test16
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 20 --output-dir /tmp/test20                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test20
+Workers          : 20
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 20 workers...
+
+Chunk 1/1...
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:17<00:00, 113.93it/s]
+Saved 2000/2000 records -> master_chunk_001.parquet
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.00h (8.8 ms/clip)
+Output: /tmp/test20
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 20 --output-dir /tmp/test20                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test20
+Workers          : 20
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 20 workers...
+Chunk 1 already done, skipping (master_chunk_001.parquet)
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.00h (0.0 ms/clip)
+Output: /tmp/test20
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 20 --output-dir /tmp/test20                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test20
+Workers          : 20
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 20 workers...
+Chunk 1 already done, skipping (master_chunk_001.parquet)
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.00h (0.0 ms/clip)
+Output: /tmp/test20
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 21 --output-dir /tmp/test21                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test21
+Workers          : 21
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 21 workers...
+
+Chunk 1/1...
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [01:15<00:00, 26.48it/s]
+Saved 2000/2000 records -> master_chunk_001.parquet
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.02h (37.9 ms/clip)
+Output: /tmp/test21
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src> sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'                                                                                                       (acoustic) 
+icfoss@precision-3660 /m/i/E/a/src> python3 master_feature_extraction.py --limit 2000 --workers 20 --output-dir /tmp/test20                                                                      (acoustic) 
+======================================================================
+MASTER FEATURE STORE — 176 features/clip
+======================================================================
+Data directory   : /media/icfoss/E-HDD/arg_cleaned_dataset
+Audio root       : /media/icfoss/E-HDD/arg_dataset_unzip
+Output directory : /tmp/test20
+Workers          : 20
+Sample rate      : 8000 Hz (native, no resample)
+======================================================================
+
+Scanning dataset...
+Found 2000 files (checked 2000 rows). Starting extraction with 20 workers...
+Chunk 1 already done, skipping (master_chunk_001.parquet)
+
+======================================================================
+EXTRACTION COMPLETE — 2000 clips in 0.00h (0.0 ms/clip)
+Output: /tmp/test20
+======================================================================
+icfoss@precision-3660 /m/i/E/a/src>  

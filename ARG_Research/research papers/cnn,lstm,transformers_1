@@ -1,0 +1,226 @@
+ Training: MFCC + LSTM
+====================================================================
+  Epoch   1/40 | loss=0.0307 | R2=0.1741 | RMSE=0.3408 | MAE=0.0853 | lr=9.98e-04 | 46.2s/epoch
+  [ETA] first epoch took 46.2s -> ~30.8 min for all 40 epochs of this model
+  Epoch   2/40 | loss=0.0258 | R2=0.0772 | RMSE=0.3602 | MAE=0.0946 | lr=9.94e-04 | 47.5s/epoch
+  Epoch   3/40 | loss=0.0234 | R2=0.2195 | RMSE=0.3313 | MAE=0.0923 | lr=9.86e-04 | 47.7s/epoch
+  Epoch   4/40 | loss=0.0215 | R2=-0.0029 | RMSE=0.3755 | MAE=0.0817 | lr=9.76e-04 | 47.7s/epoch
+  Epoch   5/40 | loss=0.0205 | R2=0.0112 | RMSE=0.3729 | MAE=0.0910 | lr=9.62e-04 | 47.6s/epoch
+  Epoch   6/40 | loss=0.0191 | R2=0.0756 | RMSE=0.3605 | MAE=0.0910 | lr=9.46e-04 | 47.7s/epoch
+  Epoch   7/40 | loss=0.0186 | R2=-0.0495 | RMSE=0.3841 | MAE=0.0792 | lr=9.26e-04 | 47.5s/epoch
+  Epoch   8/40 | loss=0.0174 | R2=0.0689 | RMSE=0.3618 | MAE=0.0868 | lr=9.05e-04 | 47.6s/epoch
+  Epoch   9/40 | loss=0.0166 | R2=-0.1911 | RMSE=0.4092 | MAE=0.0904 | lr=8.80e-04 | 47.6s/epoch
+  Epoch  10/40 | loss=0.0162 | R2=0.0762 | RMSE=0.3604 | MAE=0.0924 | lr=8.54e-04 | 47.6s/epoch
+  Epoch  11/40 | loss=0.0158 | R2=0.0993 | RMSE=0.3559 | MAE=0.0855 | lr=8.25e-04 | 47.6s/epoch
+  Epoch  12/40 | loss=0.0151 | R2=0.1616 | RMSE=0.3433 | MAE=0.0852 | lr=7.94e-04 | 47.7s/epoch
+  Epoch  13/40 | loss=0.0144 | R2=0.0346 | RMSE=0.3684 | MAE=0.0836 | lr=7.61e-04 | 47.5s/epoch
+  Epoch  14/40 | loss=0.0138 | R2=0.0782 | RMSE=0.3600 | MAE=0.0892 | lr=7.27e-04 | 47.6s/epoch
+  Epoch  15/40 | loss=0.0137 | R2=-0.0115 | RMSE=0.3771 | MAE=0.0879 | lr=6.91e-04 | 47.5s/epoch
+  Epoch  16/40 | loss=0.0128 | R2=0.0369 | RMSE=0.3680 | MAE=0.0851 | lr=6.55e-04 | 47.6s/epoch
+  Epoch  17/40 | loss=0.0124 | R2=0.1334 | RMSE=0.3491 | MAE=0.0801 | lr=6.17e-04 | 47.6s/epoch
+  Epoch  18/40 | loss=0.0117 | R2=-0.0336 | RMSE=0.3812 | MAE=0.0881 | lr=5.78e-04 | 47.6s/epoch
+  Epoch  19/40 | loss=0.0112 | R2=0.1038 | RMSE=0.3550 | MAE=0.0918 | lr=5.39e-04 | 48.1s/epoch
+  Epoch  20/40 | loss=0.0108 | R2=0.0397 | RMSE=0.3675 | MAE=0.0854 | lr=5.00e-04 | 48.1s/epoch
+  Epoch  21/40 | loss=0.0102 | R2=0.0489 | RMSE=0.3657 | MAE=0.0891 | lr=4.61e-04 | 47.9s/epoch
+  Epoch  22/40 | loss=0.0096 | R2=0.1828 | RMSE=0.3390 | MAE=0.0792 | lr=4.22e-04 | 47.9s/epoch
+  Epoch  23/40 | loss=0.0094 | R2=0.1082 | RMSE=0.3541 | MAE=0.0811 | lr=3.83e-04 | 47.8s/epoch
+  Epoch  24/40 | loss=0.0088 | R2=0.1182 | RMSE=0.3521 | MAE=0.0791 | lr=3.45e-04 | 47.9s/epoch
+  Epoch  25/40 | loss=0.0083 | R2=0.0468 | RMSE=0.3661 | MAE=0.0837 | lr=3.09e-04 | 47.8s/epoch
+  Epoch  26/40 | loss=0.0080 | R2=0.1087 | RMSE=0.3540 | MAE=0.0812 | lr=2.73e-04 | 47.9s/epoch
+  Epoch  27/40 | loss=0.0075 | R2=0.1035 | RMSE=0.3550 | MAE=0.0810 | lr=2.39e-04 | 47.2s/epoch
+  Epoch  28/40 | loss=0.0071 | R2=0.0336 | RMSE=0.3686 | MAE=0.0844 | lr=2.06e-04 | 47.5s/epoch
+  Epoch  29/40 | loss=0.0068 | R2=0.0165 | RMSE=0.3719 | MAE=0.0837 | lr=1.75e-04 | 47.2s/epoch
+  Epoch  30/40 | loss=0.0063 | R2=0.0235 | RMSE=0.3705 | MAE=0.0836 | lr=1.46e-04 | 47.4s/epoch
+  Epoch  31/40 | loss=0.0060 | R2=0.0371 | RMSE=0.3680 | MAE=0.0818 | lr=1.20e-04 | 47.3s/epoch
+  Epoch  32/40 | loss=0.0057 | R2=0.0123 | RMSE=0.3727 | MAE=0.0849 | lr=9.55e-05 | 47.2s/epoch
+  Epoch  33/40 | loss=0.0054 | R2=0.0017 | RMSE=0.3747 | MAE=0.0826 | lr=7.37e-05 | 47.1s/epoch
+  Epoch  34/40 | loss=0.0052 | R2=0.0001 | RMSE=0.3750 | MAE=0.0848 | lr=5.45e-05 | 47.2s/epoch
+  Epoch  35/40 | loss=0.0050 | R2=0.0104 | RMSE=0.3730 | MAE=0.0835 | lr=3.81e-05 | 47.3s/epoch
+  Epoch  36/40 | loss=0.0049 | R2=0.0050 | RMSE=0.3740 | MAE=0.0832 | lr=2.45e-05 | 47.3s/epoch
+  Epoch  37/40 | loss=0.0048 | R2=-0.0057 | RMSE=0.3760 | MAE=0.0830 | lr=1.38e-05 | 47.3s/epoch
+  Epoch  38/40 | loss=0.0047 | R2=-0.0006 | RMSE=0.3751 | MAE=0.0828 | lr=6.16e-06 | 47.2s/epoch
+  Epoch  39/40 | loss=0.0047 | R2=-0.0047 | RMSE=0.3759 | MAE=0.0834 | lr=1.54e-06 | 47.3s/epoch
+  Epoch  40/40 | loss=0.0046 | R2=-0.0060 | RMSE=0.3761 | MAE=0.0834 | lr=0.00e+00 | 47.3s/epoch
+  Saved best checkpoint (R2=0.2195): /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/dl_lstm_mfcc.pt
+
+====================================================================
+  ABLATION SUMMARY (mode=full)
+====================================================================
+  Model          Feature   Best R2   
+  lstm           mfcc      0.2195    
+  Baseline (Stage 4 XGBoost regressor): R2=0.155
+  Total wall time: 34.8 min
+  Saved: /media/icfoss/E-HDD/acoustic_rain_gauge_ml/docs/dl_ablation_full_report.json
+
+
+
+
+
+  Training: MFCC + CNN
+====================================================================
+  Epoch   1/40 | loss=0.0285 | R2=0.1092 | RMSE=0.3539 | MAE=0.1565 | lr=9.98e-04 | 55.6s/epoch
+  [ETA] first epoch took 55.6s -> ~37.0 min for all 40 epochs of this model
+  Epoch   2/40 | loss=0.0242 | R2=0.2578 | RMSE=0.3230 | MAE=0.1018 | lr=9.94e-04 | 55.6s/epoch
+  Epoch   3/40 | loss=0.0224 | R2=0.1035 | RMSE=0.3550 | MAE=0.1085 | lr=9.86e-04 | 55.7s/epoch
+  Epoch   4/40 | loss=0.0212 | R2=0.1911 | RMSE=0.3373 | MAE=0.1127 | lr=9.76e-04 | 55.8s/epoch
+  Epoch   5/40 | loss=0.0204 | R2=0.2770 | RMSE=0.3188 | MAE=0.1068 | lr=9.62e-04 | 56.0s/epoch
+  Epoch   6/40 | loss=0.0198 | R2=0.1538 | RMSE=0.3449 | MAE=0.1063 | lr=9.46e-04 | 55.7s/epoch
+  Epoch   7/40 | loss=0.0194 | R2=0.2280 | RMSE=0.3295 | MAE=0.1020 | lr=9.26e-04 | 55.9s/epoch
+  Epoch   8/40 | loss=0.0190 | R2=0.1977 | RMSE=0.3359 | MAE=0.1145 | lr=9.05e-04 | 55.7s/epoch
+  Epoch   9/40 | loss=0.0184 | R2=0.1865 | RMSE=0.3382 | MAE=0.1048 | lr=8.80e-04 | 56.0s/epoch
+  Epoch  10/40 | loss=0.0181 | R2=0.1404 | RMSE=0.3477 | MAE=0.1135 | lr=8.54e-04 | 55.8s/epoch
+  Epoch  11/40 | loss=0.0177 | R2=0.2326 | RMSE=0.3285 | MAE=0.0962 | lr=8.25e-04 | 56.0s/epoch
+  Epoch  12/40 | loss=0.0175 | R2=0.1708 | RMSE=0.3415 | MAE=0.1262 | lr=7.94e-04 | 55.8s/epoch
+  Epoch  13/40 | loss=0.0172 | R2=0.1243 | RMSE=0.3509 | MAE=0.1151 | lr=7.61e-04 | 55.9s/epoch
+  Epoch  14/40 | loss=0.0169 | R2=0.2121 | RMSE=0.3328 | MAE=0.1136 | lr=7.27e-04 | 55.9s/epoch
+  Epoch  15/40 | loss=0.0167 | R2=0.1470 | RMSE=0.3463 | MAE=0.0942 | lr=6.91e-04 | 55.9s/epoch
+  Epoch  16/40 | loss=0.0164 | R2=0.1475 | RMSE=0.3462 | MAE=0.1082 | lr=6.55e-04 | 55.9s/epoch
+  Epoch  17/40 | loss=0.0161 | R2=0.1824 | RMSE=0.3391 | MAE=0.1072 | lr=6.17e-04 | 55.7s/epoch
+  Epoch  18/40 | loss=0.0159 | R2=0.1433 | RMSE=0.3471 | MAE=0.1043 | lr=5.78e-04 | 55.9s/epoch
+  Epoch  19/40 | loss=0.0157 | R2=0.1180 | RMSE=0.3522 | MAE=0.1070 | lr=5.39e-04 | 55.9s/epoch
+  Epoch  20/40 | loss=0.0156 | R2=0.1066 | RMSE=0.3544 | MAE=0.1039 | lr=5.00e-04 | 56.0s/epoch
+  Epoch  21/40 | loss=0.0152 | R2=0.1962 | RMSE=0.3362 | MAE=0.1027 | lr=4.61e-04 | 55.9s/epoch
+  Epoch  22/40 | loss=0.0150 | R2=0.2577 | RMSE=0.3231 | MAE=0.1098 | lr=4.22e-04 | 55.8s/epoch
+  Epoch  23/40 | loss=0.0149 | R2=0.1387 | RMSE=0.3480 | MAE=0.1089 | lr=3.83e-04 | 55.9s/epoch
+  Epoch  24/40 | loss=0.0148 | R2=0.1262 | RMSE=0.3505 | MAE=0.1040 | lr=3.45e-04 | 56.0s/epoch
+  Epoch  25/40 | loss=0.0145 | R2=0.1182 | RMSE=0.3521 | MAE=0.1096 | lr=3.09e-04 | 55.8s/epoch
+  Epoch  26/40 | loss=0.0144 | R2=0.1332 | RMSE=0.3491 | MAE=0.1138 | lr=2.73e-04 | 56.0s/epoch
+  Epoch  27/40 | loss=0.0143 | R2=0.1577 | RMSE=0.3441 | MAE=0.1111 | lr=2.39e-04 | 56.0s/epoch
+  Epoch  28/40 | loss=0.0141 | R2=0.1679 | RMSE=0.3420 | MAE=0.1060 | lr=2.06e-04 | 56.0s/epoch
+  Epoch  29/40 | loss=0.0139 | R2=0.1501 | RMSE=0.3457 | MAE=0.1063 | lr=1.75e-04 | 56.0s/epoch
+  Epoch  30/40 | loss=0.0138 | R2=0.1720 | RMSE=0.3412 | MAE=0.1108 | lr=1.46e-04 | 55.9s/epoch
+  Epoch  31/40 | loss=0.0137 | R2=0.1328 | RMSE=0.3492 | MAE=0.1062 | lr=1.20e-04 | 55.9s/epoch
+  Epoch  32/40 | loss=0.0136 | R2=0.1534 | RMSE=0.3450 | MAE=0.1025 | lr=9.55e-05 | 56.0s/epoch
+  Epoch  33/40 | loss=0.0135 | R2=0.1220 | RMSE=0.3514 | MAE=0.1111 | lr=7.37e-05 | 56.1s/epoch
+  Epoch  34/40 | loss=0.0134 | R2=0.1429 | RMSE=0.3472 | MAE=0.1105 | lr=5.45e-05 | 56.0s/epoch
+  Epoch  35/40 | loss=0.0134 | R2=0.1102 | RMSE=0.3537 | MAE=0.1094 | lr=3.81e-05 | 56.0s/epoch
+  Epoch  36/40 | loss=0.0133 | R2=0.1321 | RMSE=0.3493 | MAE=0.1106 | lr=2.45e-05 | 55.8s/epoch
+  Epoch  37/40 | loss=0.0133 | R2=0.1388 | RMSE=0.3480 | MAE=0.1107 | lr=1.38e-05 | 55.7s/epoch
+  Epoch  38/40 | loss=0.0133 | R2=0.1340 | RMSE=0.3489 | MAE=0.1077 | lr=6.16e-06 | 56.0s/epoch
+  Epoch  39/40 | loss=0.0133 | R2=0.1259 | RMSE=0.3506 | MAE=0.1091 | lr=1.54e-06 | 56.0s/epoch
+  Epoch  40/40 | loss=0.0132 | R2=0.1305 | RMSE=0.3497 | MAE=0.1115 | lr=0.00e+00 | 55.9s/epoch
+  Saved best checkpoint (R2=0.2770): /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/dl_cnn_mfcc.pt
+
+====================================================================
+  ABLATION SUMMARY (mode=full)
+====================================================================
+  Model          Feature   Best R2   
+  cnn            mfcc      0.2770    
+  Baseline (Stage 4 XGBoost regressor): R2=0.155
+  Total wall time: 40.2 min
+  Saved: /media/icfoss/E-HDD/acoustic_rain_gauge_ml/docs/dl_ablation_full_report.json
+  
+  
+  
+  
+      Concatenating cached tensors...
+  Train MFCC cache: (40000, 40, 157) in 2840.4s
+  Saved train MFCC cache -> /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/mfcc_cache_pilot_raw_train.pt (resume point if training crashes later)
+    Creating DataLoader (num_workers=8)...
+    DataLoader ready, iterating 10,000 remaining clips (of 10,000 total) in batches of 256...
+      Batch 10: 2,560 / 10,000 clips (26%)
+      Batch 20: 5,120 / 10,000 clips (51%)
+      Batch 30: 7,680 / 10,000 clips (77%)
+      Batch 40: 10,240 / 10,000 clips (102%)
+    Concatenating cached tensors...
+  Test MFCC cache : (10000, 40, 157) in 738.7s
+  Saved test MFCC cache -> /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/mfcc_cache_pilot_raw_test.pt (resume point if training crashes later)
+
+Applying global per-coefficient normalization (train-set-derived, no test leakage)...
+  This replaces the old per-clip peak normalization, which erased the
+  absolute loudness differences between clips that SHAP found were the
+  strongest rainfall_mm predictors in the scalar-feature pipeline.
+  Per-coefficient mean/std shape: (1, 40, 1) (computed once from train, applied to both splits)
+
+====================================================================
+  Training: MFCC + TRANSFORMER
+====================================================================
+  Epoch   1/20 | loss=0.0338 | R2=0.2384 | RMSE=0.3518 | MAE=0.1328 | lr=9.94e-04 | 7.3s/epoch
+  [ETA] first epoch took 7.3s -> ~2.4 min for all 20 epochs of this model
+  Epoch   2/20 | loss=0.0307 | R2=0.2752 | RMSE=0.3432 | MAE=0.1136 | lr=9.76e-04 | 7.2s/epoch
+  Epoch   3/20 | loss=0.0283 | R2=0.2106 | RMSE=0.3581 | MAE=0.1162 | lr=9.46e-04 | 7.3s/epoch
+  Epoch   4/20 | loss=0.0274 | R2=0.2536 | RMSE=0.3482 | MAE=0.1026 | lr=9.05e-04 | 7.3s/epoch
+  Epoch   5/20 | loss=0.0271 | R2=0.2234 | RMSE=0.3552 | MAE=0.1027 | lr=8.54e-04 | 7.3s/epoch
+  Epoch   6/20 | loss=0.0270 | R2=0.2778 | RMSE=0.3426 | MAE=0.0931 | lr=7.94e-04 | 7.3s/epoch
+  Epoch   7/20 | loss=0.0252 | R2=0.3209 | RMSE=0.3322 | MAE=0.0958 | lr=7.27e-04 | 7.3s/epoch
+  Epoch   8/20 | loss=0.0243 | R2=0.1794 | RMSE=0.3651 | MAE=0.0962 | lr=6.55e-04 | 7.4s/epoch
+  Epoch   9/20 | loss=0.0237 | R2=0.1922 | RMSE=0.3623 | MAE=0.1028 | lr=5.78e-04 | 7.4s/epoch
+  Epoch  10/20 | loss=0.0223 | R2=0.2406 | RMSE=0.3513 | MAE=0.1069 | lr=5.00e-04 | 7.4s/epoch
+  Epoch  11/20 | loss=0.0214 | R2=0.3133 | RMSE=0.3340 | MAE=0.0909 | lr=4.22e-04 | 7.4s/epoch
+  Epoch  12/20 | loss=0.0203 | R2=0.1455 | RMSE=0.3726 | MAE=0.0983 | lr=3.45e-04 | 7.4s/epoch
+  Epoch  13/20 | loss=0.0196 | R2=0.0243 | RMSE=0.3981 | MAE=0.1018 | lr=2.73e-04 | 7.4s/epoch
+  Epoch  14/20 | loss=0.0185 | R2=0.1524 | RMSE=0.3711 | MAE=0.0974 | lr=2.06e-04 | 7.4s/epoch
+  Epoch  15/20 | loss=0.0180 | R2=0.1304 | RMSE=0.3759 | MAE=0.0971 | lr=1.46e-04 | 7.4s/epoch
+  Epoch  16/20 | loss=0.0170 | R2=0.1443 | RMSE=0.3729 | MAE=0.0980 | lr=9.55e-05 | 7.4s/epoch
+  Epoch  17/20 | loss=0.0164 | R2=0.1291 | RMSE=0.3762 | MAE=0.0997 | lr=5.45e-05 | 7.4s/epoch
+  Epoch  18/20 | loss=0.0161 | R2=0.1052 | RMSE=0.3813 | MAE=0.0989 | lr=2.45e-05 | 7.4s/epoch
+  Epoch  19/20 | loss=0.0158 | R2=0.1020 | RMSE=0.3820 | MAE=0.0980 | lr=6.16e-06 | 7.4s/epoch
+  Epoch  20/20 | loss=0.0156 | R2=0.0909 | RMSE=0.3843 | MAE=0.0985 | lr=0.00e+00 | 7.4s/epoch
+  Saved best checkpoint (R2=0.3209): /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/dl_transformer_mfcc.pt
+
+====================================================================
+  ABLATION SUMMARY (mode=pilot)
+====================================================================
+  Model          Feature   Best R2   
+  transformer    mfcc      0.3209    
+  Baseline (Stage 4 XGBoost regressor): R2=0.155
+  Total wall time: 2.7 min
+  Saved: /media/icfoss/E-HDD/acoustic_rain_gauge_ml/docs/dl_ablation_pilot_report.json
+icfoss@precision-3660 /m/i/E/acoustic_rain_gauge_ml (master)>   
+
+
+
+Device: cuda
+GPU: NVIDIA RTX A5000
+
+Loading FULL train/test splits...
+  Train: 607,673 rows | Test: 151,927 rows
+  Train rainy: 15.1% | Test rainy: 14.6%
+
+Precomputing MFCC once per split (shared across all architectures)...
+  Found cached train MFCC -> /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/mfcc_cache_full_raw_train.pt, loading instead of recomputing...
+  Train MFCC cache: (607673, 40, 157) (loaded from disk)
+  Found cached test MFCC -> /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/mfcc_cache_full_raw_test.pt, loading instead of recomputing...
+  Test MFCC cache : (151927, 40, 157) (loaded from disk)
+
+Applying global per-coefficient normalization (train-set-derived, no test leakage)...
+  This replaces the old per-clip peak normalization, which erased the
+  absolute loudness differences between clips that SHAP found were the
+  strongest rainfall_mm predictors in the scalar-feature pipeline.
+  Per-coefficient mean/std shape: (1, 40, 1) (computed once from train, applied to both splits)
+
+====================================================================
+  Training: MFCC + TRANSFORMER
+====================================================================
+  Epoch   1/20 | loss=0.0275 | R2=0.2263 | RMSE=0.3298 | MAE=0.0871 | lr=9.94e-04 | 110.6s/epoch
+  [ETA] first epoch took 110.6s -> ~36.9 min for all 20 epochs of this model
+  Epoch   2/20 | loss=0.0243 | R2=0.2407 | RMSE=0.3267 | MAE=0.0822 | lr=9.76e-04 | 111.9s/epoch
+  Epoch   3/20 | loss=0.0227 | R2=0.1639 | RMSE=0.3429 | MAE=0.0841 | lr=9.46e-04 | 112.2s/epoch
+  Epoch   4/20 | loss=0.0213 | R2=0.2324 | RMSE=0.3285 | MAE=0.0720 | lr=9.05e-04 | 112.3s/epoch
+  Epoch   5/20 | loss=0.0209 | R2=0.1856 | RMSE=0.3384 | MAE=0.0746 | lr=8.54e-04 | 112.2s/epoch
+  Epoch   6/20 | loss=0.0194 | R2=0.2680 | RMSE=0.3208 | MAE=0.0755 | lr=7.94e-04 | 112.3s/epoch
+  Epoch   7/20 | loss=0.0192 | R2=0.1466 | RMSE=0.3464 | MAE=0.0727 | lr=7.27e-04 | 112.2s/epoch
+  Epoch   8/20 | loss=0.0186 | R2=0.1495 | RMSE=0.3458 | MAE=0.0756 | lr=6.55e-04 | 112.1s/epoch
+  Epoch   9/20 | loss=0.0178 | R2=0.1748 | RMSE=0.3406 | MAE=0.0736 | lr=5.78e-04 | 111.9s/epoch
+  Epoch  10/20 | loss=0.0170 | R2=0.1282 | RMSE=0.3501 | MAE=0.0752 | lr=5.00e-04 | 112.0s/epoch
+  Epoch  11/20 | loss=0.0164 | R2=0.0124 | RMSE=0.3726 | MAE=0.0752 | lr=4.22e-04 | 112.2s/epoch
+  Epoch  12/20 | loss=0.0158 | R2=0.1955 | RMSE=0.3363 | MAE=0.0738 | lr=3.45e-04 | 112.2s/epoch
+  Epoch  13/20 | loss=0.0153 | R2=0.0259 | RMSE=0.3701 | MAE=0.0779 | lr=2.73e-04 | 112.2s/epoch
+  Epoch  14/20 | loss=0.0147 | R2=0.0333 | RMSE=0.3687 | MAE=0.0755 | lr=2.06e-04 | 112.3s/epoch
+  Epoch  15/20 | loss=0.0140 | R2=0.0753 | RMSE=0.3606 | MAE=0.0763 | lr=1.46e-04 | 112.1s/epoch
+  Epoch  16/20 | loss=0.0136 | R2=0.1393 | RMSE=0.3479 | MAE=0.0737 | lr=9.55e-05 | 112.0s/epoch
+  Epoch  17/20 | loss=0.0131 | R2=0.1991 | RMSE=0.3356 | MAE=0.0731 | lr=5.45e-05 | 111.9s/epoch
+  Epoch  18/20 | loss=0.0128 | R2=0.1398 | RMSE=0.3478 | MAE=0.0733 | lr=2.45e-05 | 111.8s/epoch
+  Epoch  19/20 | loss=0.0125 | R2=0.1587 | RMSE=0.3439 | MAE=0.0731 | lr=6.16e-06 | 111.9s/epoch
+  Epoch  20/20 | loss=0.0124 | R2=0.1596 | RMSE=0.3438 | MAE=0.0728 | lr=0.00e+00 | 112.1s/epoch
+  Saved best checkpoint (R2=0.2680): /media/icfoss/E-HDD/acoustic_rain_gauge_ml/models/dl_transformer_mfcc.pt
+
+====================================================================
+  ABLATION SUMMARY (mode=full)
+====================================================================
+  Model          Feature   Best R2   
+  transformer    mfcc      0.2680    
+  Baseline (Stage 4 XGBoost regressor): R2=0.155
+  Total wall time: 40.1 min
+  Saved: /media/icfoss/E-HDD/acoustic_rain_gauge_ml/docs/dl_ablation_full_report.json
+icfoss@precision-3660 /m/i/E/acoustic_rain_gauge_ml (master)>  

@@ -1,0 +1,12 @@
+// Copy this file to wifi_config.h (same folder) and fill in your details.
+// wifi_config.h is gitignored so real credentials never get committed.
+#pragma once
+
+#define WIFI_SSID     "your-wifi-name"
+#define WIFI_PASSWORD "your-wifi-password"
+
+// IP address (not hostname) of the PC/laptop running tools/wifi_audio_server.py,
+// on the same local network as the XIAO. Find it with `ipconfig` (Windows)
+// or `ip addr` (Linux/Mac).
+#define SERVER_HOST "192.168.1.100"
+#define SERVER_PORT 9494
