@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Research Analysis — Acoustic Rain Gauge · Acoustic Rain Gauge</title>
+<style>
+:root {
+  --hue: 262;
+  --bg: #f6f7fb;
+  --bg-card: #ffffff;
+  --bg-code: #eef0f6;
+  --ink: #1b2030;
+  --ink-soft: #4a5268;
+  --ink-faint: #7b8399;
+  --line: #e2e5ef;
+  --accent: hsl(var(--hue), 70%, 46%);
+  --accent-soft: hsl(var(--hue), 75%, 95%);
+  --accent-ink: hsl(var(--hue), 60%, 32%);
+  --shadow: 0 1px 3px rgba(20, 25, 45, .07), 0 8px 24px rgba(20, 25, 45, .06);
+  --radius: 14px;
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  --bg: #0e1118;
+  --bg-card: #161b26;
+  --bg-code: #1d2331;
+  --ink: #e8eaf2;
+  --ink-soft: #aab2c5;
+  --ink-faint: #6f7890;
+  --line: #262d3d;
+  --accent: hsl(var(--hue), 75%, 62%);
+  --accent-soft: hsl(var(--hue), 45%, 17%);
+  --accent-ink: hsl(var(--hue), 80%, 74%);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: 16px;
+  transition: background .25s ease, color .25s ease;
+}
+
+/* ---- progress bar ---- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, hsl(var(--hue),80%,55%), hsl(calc(var(--hue) + 60),80%,60%));
+  z-index: 100; transition: width .1s linear;
+}
+
+/* ---- header ---- */
+.site-header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 22px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.site-header .home {
+  font-weight: 700; text-decoration: none; color: var(--ink);
+  display: flex; align-items: center; gap: 8px; font-size: .95rem;
+  white-space: nowrap;
+}
+.site-header .home .dot {
+  width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  background: linear-gradient(135deg, hsl(var(--hue),75%,55%), hsl(calc(var(--hue) + 50),75%,60%));
+  font-size: 14px;
+}
+.doc-nav { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; }
+.doc-nav a {
+  text-decoration: none; color: var(--ink-soft); font-size: .82rem;
+  padding: 6px 11px; border-radius: 9px; white-space: nowrap;
+}
+.doc-nav a:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.doc-nav a.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+#themeBtn {
+  border: 1px solid var(--line); background: var(--bg-card); color: var(--ink);
+  border-radius: 9px; padding: 5px 11px; cursor: pointer; font-size: .95rem;
+  flex-shrink: 0;
+}
+#themeBtn:hover { border-color: var(--accent); }
+
+/* ---- hero ---- */
+.hero {
+  padding: 54px 26px 40px;
+  background:
+    radial-gradient(1100px 420px at 12% -10%, hsla(var(--hue), 80%, 60%, .16), transparent 60%),
+    radial-gradient(900px 380px at 88% -20%, hsla(calc(var(--hue) + 70), 80%, 60%, .12), transparent 60%);
+  border-bottom: 1px solid var(--line);
+}
+.hero-inner { max-width: 1160px; margin: 0 auto; }
+.hero .emoji { font-size: 2.4rem; }
+.hero h1 {
+  margin: 10px 0 8px; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.15;
+  letter-spacing: -.02em;
+  background: linear-gradient(100deg, var(--ink) 30%, hsl(var(--hue), 70%, 55%));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero .tagline { color: var(--ink-soft); max-width: 68ch; margin: 0 0 18px; font-size: 1.02rem; }
+.meta-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: .76rem; padding: 4px 12px; border-radius: 999px;
+  background: var(--bg-card); border: 1px solid var(--line); color: var(--ink-soft);
+  box-shadow: var(--shadow);
+}
+
+/* ---- layout ---- */
+.layout {
+  max-width: 1160px; margin: 0 auto; padding: 30px 26px 90px;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px;
+  align-items: start;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } .sidebar { display: none; } }
+
+/* ---- sidebar TOC ---- */
+.sidebar { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto; padding-right: 4px; }
+.sidebar h4 {
+  margin: 4px 0 10px; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc > ul > li > ul { padding-left: 14px; }
+.toc ul ul ul { display: none; }               /* cap depth shown */
+.toc a {
+  display: block; padding: 4px 10px; margin: 1px 0; border-left: 2px solid transparent;
+  color: var(--ink-soft); text-decoration: none; font-size: .82rem; line-height: 1.35;
+  border-radius: 0 7px 7px 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.toc a:hover { color: var(--accent-ink); background: var(--accent-soft); }
+.toc a.active { color: var(--accent-ink); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* ---- article ---- */
+.article { min-width: 0; }
+.article h1, .article h2, .article h3, .article h4 { letter-spacing: -.015em; line-height: 1.25; scroll-margin-top: 84px; }
+.article h1 { font-size: 1.75rem; margin: 2.2em 0 .6em; }
+.article h2 {
+  font-size: 1.42rem; margin: 2.4em 0 .7em; padding-bottom: .35em;
+  border-bottom: 2px solid var(--line); position: relative;
+}
+.article h2::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 64px; height: 2px;
+  background: linear-gradient(90deg, hsl(var(--hue),75%,55%), transparent);
+}
+.article h3 { font-size: 1.13rem; margin: 1.9em 0 .5em; }
+.article h4 { font-size: 1rem; margin: 1.6em 0 .4em; color: var(--ink-soft); }
+.article > :first-child { margin-top: 0; }
+.article p { margin: .85em 0; }
+.article a { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid transparent; }
+.article a:hover { border-bottom-color: var(--accent-ink); }
+.article strong { color: var(--ink); }
+.article hr { border: none; border-top: 1px solid var(--line); margin: 2.6em 0; }
+.article ul, .article ol { padding-left: 1.5em; }
+.article li { margin: .3em 0; }
+.article img { max-width: 100%; border-radius: var(--radius); }
+.headerlink { opacity: 0; margin-left: 8px; font-size: .8em; text-decoration: none; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink { opacity: .55; }
+
+/* blockquotes */
+.article blockquote {
+  margin: 1.2em 0; padding: 12px 18px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--ink-soft);
+}
+.article blockquote p { margin: .4em 0; }
+
+/* code */
+code {
+  font-family: "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  font-size: .86em; background: var(--bg-code); padding: .14em .42em;
+  border-radius: 6px; color: var(--accent-ink);
+}
+pre {
+  background: var(--bg-code); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; overflow-x: auto; line-height: 1.5; box-shadow: var(--shadow);
+}
+pre code { background: none; padding: 0; color: var(--ink); font-size: .84rem; }
+
+/* tables */
+.table-wrap {
+  overflow-x: auto; margin: 1.3em 0; border-radius: var(--radius);
+  border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--bg-card);
+}
+table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+th, td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+thead th {
+  background: var(--accent-soft); color: var(--accent-ink);
+  font-size: .74rem; letter-spacing: .07em; text-transform: uppercase;
+  position: sticky; top: 0;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+
+/* evidence badges */
+.badge {
+  display: inline-block; font-size: .66rem; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 9px; border-radius: 999px; vertical-align: middle; white-space: nowrap;
+}
+.badge-paper     { background: #dbeafe; color: #1d4ed8; }
+.badge-measured  { background: #dcfce7; color: #15803d; }
+.badge-derived   { background: #fef3c7; color: #b45309; }
+.badge-inference { background: #f3e8ff; color: #7e22ce; }
+.badge-proposal  { background: #fee2e2; color: #b91c1c; }
+html[data-theme="dark"] .badge-paper     { background: #1e3a5f; color: #93c5fd; }
+html[data-theme="dark"] .badge-measured  { background: #14432a; color: #86efac; }
+html[data-theme="dark"] .badge-derived   { background: #4a3510; color: #fcd34d; }
+html[data-theme="dark"] .badge-inference { background: #3b2160; color: #d8b4fe; }
+html[data-theme="dark"] .badge-proposal  { background: #4c1d1d; color: #fca5a5; }
+
+/* mermaid */
+.mermaid-wrap {
+  overflow-x: auto; margin: 1.4em 0; padding: 18px;
+  background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); text-align: center;
+}
+
+/* back to top */
+#topBtn {
+  position: fixed; right: 22px; bottom: 22px; width: 42px; height: 42px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--bg-card);
+  color: var(--ink); cursor: pointer; font-size: 1.1rem; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease;
+}
+#topBtn.show { opacity: 1; pointer-events: auto; }
+#topBtn:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+footer {
+  border-top: 1px solid var(--line); padding: 26px; text-align: center;
+  color: var(--ink-faint); font-size: .8rem;
+}
+footer a { color: var(--accent-ink); text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<header class="site-header">
+  <a class="home" href="index.html"><span class="dot">🌧️</span> ARG Docs</a>
+  <nav class="doc-nav"><a href="deep_research_analysis.html" class="active">🔬 Deep Research Analysis</a><a href="research_paper_analysis.html" class="">📚 Research Paper Analysis</a><a href="project_handbook.html" class="">📖 Project Handbook</a><a href="progress.html" class="">📈 Progress</a><a href="roadmap.html" class="">🗺️ Roadmap</a></nav>
+  <button id="themeBtn" title="Toggle theme">🌙</button>
+</header>
+<div class="hero"><div class="hero-inner">
+  <div class="emoji">🔬</div>
+  <h1>Deep Research Analysis — Acoustic Rain Gauge</h1>
+  <p class="tagline">Every inference, hidden implication and engineering principle extracted from the acoustic-rain-gauge literature.</p>
+  <div class="meta-chips"><span class="chip">📝 9,931 words</span><span class="chip">⏱️ ~45 min read</span><span class="chip">📄 source: DEEP_RESEARCH_ANALYSIS.md</span></div>
+</div></div>
+<div class="layout">
+  <aside class="sidebar"><h4>On this page</h4><div class="toc">
+<ul>
+<li><a href="#how-to-read-this-document">How to read this document</a></li>
+<li><a href="#0-the-headline-finding-of-this-analysis">0. The headline finding of this analysis</a><ul>
+<li><a href="#01-three-independent-lines-of-evidence-agree-on-which-frequencies-carry-rain-information--and-this-projects-own-shap-rankings-are-the-third-one">0.1 Three independent lines of evidence agree on which frequencies carry rain information — and this project's own SHAP rankings are the third one</a></li>
+</ul>
+</li>
+<li><a href="#1-feature-engineering">1. Feature Engineering</a><ul>
+<li><a href="#11-why-psd-and-why-it-generalizes-the-question-the-prompt-asked-directly">1.1 Why PSD, and why it generalizes (the question the prompt asked directly)</a></li>
+<li><a href="#12-the-feature-catalogue-assessed-for-this-project">1.2 The feature catalogue, assessed for this project</a></li>
+<li><a href="#13-the-normalization-finding-and-why-the-literature-predicted-it">1.3 The normalization finding, and why the literature predicted it</a></li>
+<li><a href="#14-the-integration-time-result--the-highest-value-finding-in-this-document">1.4 The integration-time result — the highest-value finding in this document</a></li>
+</ul>
+</li>
+<li><a href="#2-rain-physics">2. Rain Physics</a><ul>
+<li><a href="#21-two-mechanisms-and-why-this-project-only-sees-one-of-them">2.1 Two mechanisms, and why this project only sees one of them</a></li>
+<li><a href="#22-the-physics-table">2.2 The physics table</a></li>
+<li><a href="#23-the-dsd-ceiling--why-a-single-regression-function-cannot-win">2.3 The DSD ceiling — why a single regression function cannot win</a></li>
+</ul>
+</li>
+<li><a href="#3-signal-processing">3. Signal Processing</a><ul>
+<li><a href="#31-choices-and-their-hidden-justifications">3.1 Choices, and their hidden justifications</a></li>
+<li><a href="#32-a-caution-on-denoising">3.2 A caution on denoising</a></li>
+<li><a href="#33-underused-dsp-with-a-clear-rationale">3.3 Underused DSP with a clear rationale</a></li>
+</ul>
+</li>
+<li><a href="#4-machine-learning">4. Machine Learning</a><ul>
+<li><a href="#41-what-the-cross-paper-record-actually-shows">4.1 What the cross-paper record actually shows</a></li>
+<li><a href="#42-the-full-scale-dl-degradation--a-hypothesis-the-literature-suggests">4.2 The full-scale DL degradation — a hypothesis the literature suggests</a></li>
+<li><a href="#43-modern-methods-ranked-by-expected-value-here">4.3 Modern methods, ranked by expected value here</a></li>
+</ul>
+</li>
+<li><a href="#5-sensor-fusion">5. Sensor Fusion</a><ul>
+<li><a href="#51-wind--necessary-but-not-the-way-anyone-has-tried">5.1 Wind — necessary, but not the way anyone has tried</a></li>
+<li><a href="#52-the-rest-of-the-fusion-space">5.2 The rest of the fusion space</a></li>
+</ul>
+</li>
+<li><a href="#6-deployment">6. Deployment</a><ul>
+<li><a href="#61-where-this-project-already-is">6.1 Where this project already is</a></li>
+<li><a href="#62-the-deployment-ladder">6.2 The deployment ladder</a></li>
+<li><a href="#63-power-and-telemetry">6.3 Power and telemetry</a></li>
+<li><a href="#64-the-sensing-surface--the-missing-hardware-decision">6.4 The sensing surface — the missing hardware decision</a></li>
+</ul>
+</li>
+<li><a href="#7-generalization">7. Generalization</a></li>
+<li><a href="#8-outputs-beyond-rainfall">8. Outputs Beyond Rainfall</a></li>
+<li><a href="#9-novel-research-opportunities">9. Novel Research Opportunities</a><ul>
+<li><a href="#the-gap-this-project-is-uniquely-positioned-to-close">The gap this project is uniquely positioned to close</a></li>
+</ul>
+</li>
+<li><a href="#10-cross-paper-knowledge-graph">10. Cross-Paper Knowledge Graph</a></li>
+<li><a href="#11-comparison-tables">11. Comparison Tables</a><ul>
+<li><a href="#111-feature-families">11.1 Feature families</a></li>
+<li><a href="#112-models">11.2 Models</a></li>
+<li><a href="#113-benchmarks--read-the-conditions-not-just-the-number">11.3 Benchmarks — read the conditions, not just the number</a></li>
+</ul>
+</li>
+<li><a href="#12-future-roadmap">12. Future Roadmap</a></li>
+<li><a href="#13-ranked-research-directions">13. Ranked Research Directions</a><ul>
+<li><a href="#if-you-only-do-three-things">If you only do three things</a></li>
+</ul>
+</li>
+<li><a href="#sources">Sources</a></li>
+</ul>
+</div>
+</aside>
+  <main class="article"><h1 id="deep-research-analysis--acoustic-rain-gauge">Deep Research Analysis — Acoustic Rain Gauge<a class="headerlink" href="#deep-research-analysis--acoustic-rain-gauge" title="Permanent link">¶</a></h1>
+<p><strong>Hidden inferences, engineering principles, and novel research directions</strong></p>
+<p><em>Compiled 2026-07-16. Scope: the project's own 172-paper library (see <a href="research_paper_analysis.html">RESEARCH_PAPER_ANALYSIS.md</a> for the per-paper identification and summary pass), plus a fresh 2024–2026 literature sweep, plus first-principles rain-impact acoustics.</em></p>
+<hr />
+<h2 id="how-to-read-this-document">How to read this document<a class="headerlink" href="#how-to-read-this-document" title="Permanent link">¶</a></h2>
+<p>This is <strong>not</strong> a literature summary. <a href="research_paper_analysis.html">RESEARCH_PAPER_ANALYSIS.md</a> already does the "what does each paper say" job. This document does the next thing: it extracts what the papers <strong>imply but do not state</strong>, cross-references findings that no single paper connects, and converts each into a concrete, testable direction for this project.</p>
+<p>Every claim is tagged so you can tell evidence from argument:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Stated explicitly in a cited paper.</td>
+</tr>
+<tr>
+<td><strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>Measured in this repository; a results file is cited.</td>
+</tr>
+<tr>
+<td><strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span></strong></td>
+<td>Computed here from established physics or from this repo's own configuration. Reproducible.</td>
+</tr>
+<tr>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong></td>
+<td>My reasoning across sources. Plausible, not proven. Argued, not asserted.</td>
+</tr>
+<tr>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span></strong></td>
+<td>A new idea. Untested. The burden of proof is on it.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Where the project stands, for context</strong> (all <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong>): 780,725 clips over 19 field campaigns, 8 kHz mono, 10 s. Classifier AUC-ROC <strong>0.887</strong>; best regressor <strong>R² = 0.5429</strong> via a learned stacking ensemble (<a href="../reports/ensemble_stack_report.json"><code>docs/reports/ensemble_stack_report.json</code></a>). External benchmarks: SARID <strong>0.765</strong>, Monti &amp; Ntalampiras <strong>0.787</strong> — both on curated, single-site, rain-only data.</p>
+<hr />
+<h2 id="0-the-headline-finding-of-this-analysis">0. The headline finding of this analysis<a class="headerlink" href="#0-the-headline-finding-of-this-analysis" title="Permanent link">¶</a></h2>
+<p>Before the taxonomy, the single most important thing this analysis turned up, because it is new, it is cheap to act on, and it did not come from any one paper.</p>
+<h3 id="01-three-independent-lines-of-evidence-agree-on-which-frequencies-carry-rain-information--and-this-projects-own-shap-rankings-are-the-third-one">0.1 Three independent lines of evidence agree on which frequencies carry rain information — and this project's own SHAP rankings are the third one<a class="headerlink" href="#01-three-independent-lines-of-evidence-agree-on-which-frequencies-carry-rain-information--and-this-projects-own-shap-rankings-are-the-third-one" title="Permanent link">¶</a></h3>
+<p>Two papers independently searched for the optimal frequency band for rain acoustics, using different methods, different hardware, different continents, different surfaces:</p>
+<ul>
+<li><strong>Xavier et al. (2024, GRL)</strong>, Central Amazon, 24/48 kHz sound recorders, swept a 600 Hz window from 0→24 kHz and correlated each window's integrated PSD against gauge rainfall. Only two windows exceeded r = 0.6: <strong>0–797 Hz</strong> (r = 0.72) and <strong>1641–2719 Hz</strong> (r = 0.67). They chose 1641–2719 Hz for the deployed model, explicitly because the lower band risked overfitting while the upper band "encompasses a broader spectrum of features, making the model more adaptable to different locations." <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></li>
+<li><strong>Monti &amp; Ntalampiras (2025, EUSIPCO)</strong>, SARID surveillance-audio benchmark: rainfall-relevant information is concentrated <strong>below ~2000 Hz</strong>; low-passing at 2–3 kHz slightly <em>helps</em>, low-passing at 1 kHz <em>hurts</em>. <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></li>
+</ul>
+<p>Now the third line, which is ours. This project's Stage 8 SHAP rankings are dominated by dense mel-band means, and the reports name specific band indices: <code>mel_band_7_mean</code>, <code>mel_band_8_mean</code> top the <strong>regression</strong> ranking; <code>mel_band_27_mean</code>, <code>mel_band_36_mean</code> top the <strong>classification</strong> ranking (<a href="progress.html">PROGRESS.md</a>, Stage 8). Those indices are opaque as written. Mapping them to Hz through this repo's actual configuration (<code>TARGET_SR = 8000</code>, <code>n_mels = 40</code>, librosa mel filterbank, <code>fmin=0</code>, <code>fmax=4000</code>) <strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span></strong>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>SHAP rank</th>
+<th>Band edges</th>
+<th>Center</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mel_band_7_mean</code></td>
+<td>top <strong>regression</strong></td>
+<td>400 – 515 Hz</td>
+<td>457 Hz</td>
+</tr>
+<tr>
+<td><code>mel_band_8_mean</code></td>
+<td>top <strong>regression</strong></td>
+<td>457 – 572 Hz</td>
+<td>515 Hz</td>
+</tr>
+<tr>
+<td><code>mel_band_27_mean</code></td>
+<td>top <strong>classification</strong></td>
+<td>1752 – 1971 Hz</td>
+<td>1859 Hz</td>
+</tr>
+<tr>
+<td><code>mel_band_36_mean</code></td>
+<td>top <strong>classification</strong></td>
+<td>2979 – 3352 Hz</td>
+<td>3160 Hz</td>
+</tr>
+</tbody>
+</table></div>
+<p>Line these up against the two papers:</p>
+<ul>
+<li>Our top <strong>regression</strong> bands (400–572 Hz) fall inside Xavier's best <strong>rainfall-amount</strong> correlation window (0–797 Hz, r = 0.72). Both are amount-estimation tasks. They agree.</li>
+<li>Our top <strong>classification</strong> band <code>mel_band_27</code> (1752–1971 Hz) falls inside Xavier's chosen <strong>detection</strong> window (1641–2719 Hz). Both are detection tasks. They agree.</li>
+<li>Monti's "information below ~2 kHz" is consistent with three of our four top bands.</li>
+</ul>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> — and this is the load-bearing one.</strong> Three independent studies, with no shared code, hardware, surface, climate, or method, converge on the same two frequency regions. That is unlikely to be coincidence. It suggests the audio→rainfall mapping has a <strong>physically real, site-transferable spectral structure</strong>, not a per-deployment quirk that each model happens to memorize. This matters far beyond feature selection: it is the strongest available evidence that a model trained here has a <em>reason</em> to transfer elsewhere.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> — the second, sharper reading.</strong> Our own SHAP ranking discovered, unprompted, that <strong>detection and amount-estimation live in different frequency bands</strong> — detection ~1.8–3.2 kHz, amount ~400–570 Hz. This project already stumbled onto the consequence empirically and recorded it as a puzzle: ranking features against <code>rainfall_mm</code> and reusing that list for the classifier <em>hurt</em> AUC (0.842 vs 0.883), which forced the <code>--target</code> flag (<a href="progress.html">PROGRESS.md</a>, Stage 8). That was logged as an ML-hygiene lesson. <strong>It is not. It is physics.</strong> The two tasks were asking about different frequency regions, so a feature list optimized for one was actively wrong for the other.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> — why the split exists, physically.</strong> Section 2 develops this, but in short: <em>presence</em> of rain is most cleanly signaled by bubble-entrainment resonances and sharp impact transients, which are mid-frequency and spectrally distinctive against ambient noise; <em>amount</em> is carried by the aggregate energy of overlapping impacts, which concentrates at lower frequencies where the surface response is strongest and where individual drops blur into a stationary roar. Detection wants <strong>spectral distinctiveness</strong>; regression wants <strong>energy accumulation</strong>. Different physics, different bands.</p>
+<p><strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span> — the reassuring corollary.</strong> Every band that all three lines of evidence care about (400 Hz – 3.4 kHz) sits <strong>below this project's 4 kHz Nyquist limit</strong>. The 8 kHz sample rate, which has read like a limitation throughout this project's history, is <strong>not</strong> costing us rain signal. Two independent papers with 3–6× our bandwidth searched their full range and landed inside ours. This retires a standing worry, and it is a positive argument for cheap hardware (Section 6).</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> — act on it three ways, cheapest first.</strong>
+1. <strong>Band-restricted features.</strong> Add explicit integrated-PSD features over exactly 0–797 Hz and 1641–2719 Hz (Welch, <code>nperseg=1024</code>, per Xavier's setup). Two scalars. Near-zero cost. Directly testable against the current 175-feature store.
+2. <strong>Task-specific band gating.</strong> Stop feeding both models the same spectral range. Give the regressor low-band-weighted inputs and the classifier mid-band-weighted inputs. This is what SHAP is already telling us to do; we're just not listening to it structurally.
+3. <strong>A physics-motivated 4-feature baseline.</strong> Xavier got R² &gt; 0.85 hourly from integrated PSD in <em>one</em> band with a random forest. We use 175 features and 4 stacked models for R² = 0.5429 per-clip. Section 1.4 argues the difference is mostly integration time, not model capacity — which, if true, is the most important sentence in this document.</p>
+<hr />
+<h2 id="1-feature-engineering">1. Feature Engineering<a class="headerlink" href="#1-feature-engineering" title="Permanent link">¶</a></h2>
+<h3 id="11-why-psd-and-why-it-generalizes-the-question-the-prompt-asked-directly">1.1 Why PSD, and why it generalizes (the question the prompt asked directly)<a class="headerlink" href="#11-why-psd-and-why-it-generalizes-the-question-the-prompt-asked-directly" title="Permanent link">¶</a></h3>
+<p><strong>What it is.</strong> Power Spectral Density: the distribution of signal power over frequency, in units of power per Hz. Welch's method — the choice in Xavier et al. and in <code>scipy.signal.welch</code> — estimates it by splitting the signal into overlapping windowed segments, taking the periodogram of each, and <em>averaging</em> them.</p>
+<p><strong>Why the Amazon researchers chose it, specifically.</strong> Not because it is the most informative representation — it demonstrably is not; MFCC beats it on SARID by 16–21% <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>. They chose it because of what averaging does. Four reasons, in order of importance:</p>
+<ol>
+<li><strong>It solves the drop-counting problem by refusing to count drops.</strong> A 10-second clip of moderate rain contains thousands of overlapping impacts. Any feature that tries to resolve individual events (peak detection, onset density, impact counting) inherits the Poisson variance of the drop arrival process — the exact variance floor Joss &amp; Waldvogel (1969) derived: at 1 mm/h you need ~1 m² exposed for ~1 s just to get reflectivity within 20% <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>. PSD sidesteps this entirely: it estimates the <em>statistics</em> of the sound field rather than its <em>events</em>. Welch's segment-averaging is, formally, a variance-reduction estimator (variance falls ~1/K for K segments, at the cost of frequency resolution). <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> PSD is popular in rain acoustics because rain is a <strong>stochastic stationary process on the timescale of a clip</strong>, and PSD is the natural sufficient statistic for exactly that class of process. This is the deep reason, and no paper states it this way.</li>
+<li><strong>It is invariant to what changes across sites and variant to what doesn't.</strong> Move the mic 30 km to a different forest type and the <em>arrival times</em> of drops change completely; the <em>spectral shape</em> of the drop-impact ensemble largely does not, because it is set by drop physics and surface response, not by geography. Xavier's cross-site validation (train at IDSM, test 30 km away in Low Várzea and Chavascal: 97–98% detection accuracy, hourly R² 0.69 and 0.93) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong> is the empirical proof.</li>
+<li><strong>It matches Random Forest's inductive bias.</strong> RF splits on axis-aligned thresholds of individual features. A PSD vector is a set of band powers — each one a physically meaningful scalar with a monotone-ish relationship to intensity. That is precisely the shape of problem where axis-aligned splits are efficient. Feed RF raw waveform samples instead and every split is meaningless. <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> The RF-works-well result is <em>downstream of the PSD choice</em>, not independent of it — a point Xavier et al. never make, and which matters because it predicts that PSD+RF is a package deal, not two separable good decisions.</li>
+<li><strong>It is cheap enough to run on a microcontroller.</strong> One FFT per segment, magnitude-square, average. No mel filterbank, no DCT, no log. See Section 6.</li>
+</ol>
+<p><strong>Limitations, honestly.</strong> PSD discards <em>all</em> phase and <em>all</em> temporal structure within the clip. This project has <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong> that the discarded temporal structure is worth real accuracy: feeding the full MFCC time-series to sequence models roughly doubled pilot R² over time-averaged scalars (0.226 → 0.347). So PSD is a <em>floor</em>, not a ceiling — a robust, transferable, cheap floor.</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Fuse, don't choose.</strong> PSD (stationary, transferable, cheap) and transient features (onset density, Teager energy, peak statistics — already in the 175-feature store) are complementary by construction: one describes the ensemble, the other the events. Xavier's model would likely improve with transients; ours already has both but has never tested them as an explicit two-view split. A two-view model (stationary view ⊕ transient view, fused late) is a clean, publishable ablation that neither Xavier nor SARID ran.</p>
+<h3 id="12-the-feature-catalogue-assessed-for-this-project">1.2 The feature catalogue, assessed for <em>this</em> project<a class="headerlink" href="#12-the-feature-catalogue-assessed-for-this-project" title="Permanent link">¶</a></h3>
+<p>Ratings below are for <strong>8 kHz, 10 s clips, 4 kHz Nyquist, field-noise conditions, tipping-bucket labels</strong>. "Edge" = fits an ESP32-S3 comfortably. Status is against this repo's actual 175-feature master store.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>What it captures</th>
+<th>Rain-relevance here</th>
+<th>Wind robustness</th>
+<th>Edge</th>
+<th>Status in repo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Integrated PSD, 0–797 Hz</strong></td>
+<td>Low-band energy</td>
+<td><strong>High (amount)</strong> — Xavier r=0.72; matches our top SHAP regression bands</td>
+<td>Poor — wind is low-frequency</td>
+<td>✅</td>
+<td><strong>Missing → add (Sec 0.1)</strong></td>
+</tr>
+<tr>
+<td><strong>Integrated PSD, 1641–2719 Hz</strong></td>
+<td>Mid-band energy</td>
+<td><strong>High (detection)</strong> — Xavier's deployed choice; matches our top SHAP class. band</td>
+<td>Good — above most wind</td>
+<td>✅</td>
+<td><strong>Missing → add</strong></td>
+</tr>
+<tr>
+<td><strong>Band-power ratio (mid/low)</strong></td>
+<td>Spectral tilt</td>
+<td><strong>High</strong> — a ratio cancels absolute gain, so it survives mic/gain change</td>
+<td><strong>Excellent</strong> — wind inflates low band, ratio detects that</td>
+<td>✅</td>
+<td><strong>Missing → add (Sec 7)</strong></td>
+</tr>
+<tr>
+<td>Dense mel-band means (40)</td>
+<td>Coarse spectral envelope</td>
+<td><strong>Highest measured</strong> — dominates SHAP for both tasks</td>
+<td>Mixed (band-dependent)</td>
+<td>⚠️</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>MFCC (means)</td>
+<td>Decorrelated spectral texture</td>
+<td>High — SARID's winner; <code>mfcc_2</code> top-1 in our Stage 4</td>
+<td>Moderate</td>
+<td>⚠️</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>MFCC <strong>time-series</strong> (40×157)</td>
+<td>Texture <em>over time</em></td>
+<td><strong>Highest DL value</strong> — 2× R² over means at pilot</td>
+<td>Moderate</td>
+<td>❌</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>RMS / peak / PAR</td>
+<td>Loudness, burstiness</td>
+<td>High but gain-dependent</td>
+<td>Poor</td>
+<td>✅</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>Spectral centroid/bandwidth/rolloff</td>
+<td>Spectral shape</td>
+<td>Moderate — our false positives show elevated rolloff</td>
+<td>Poor</td>
+<td>✅</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>Spectral flux</td>
+<td>Frame-to-frame change</td>
+<td>Moderate — high in our regression SHAP</td>
+<td><strong>Good</strong> — wind is smooth, rain is not</td>
+<td>✅</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>ZCR</td>
+<td>Noisiness</td>
+<td>Low-moderate</td>
+<td>Poor</td>
+<td>✅</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>Teager energy</td>
+<td>Instantaneous energy incl. frequency</td>
+<td>Moderate — impact-sensitive</td>
+<td>Moderate</td>
+<td>✅</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>Wavelet variance</td>
+<td>Multi-scale energy</td>
+<td>Moderate — high in regression SHAP</td>
+<td>Moderate</td>
+<td>⚠️</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td>Onset density / tempo</td>
+<td>Impact rate</td>
+<td><strong>Theoretically ideal, practically fragile</strong> — see below</td>
+<td>Poor</td>
+<td>⚠️</td>
+<td>✅ present</td>
+</tr>
+<tr>
+<td><strong>Spectral entropy / flatness</strong></td>
+<td>Tonal vs noise-like</td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> High</strong> — rain is near-white in-band; birds/speech/traffic are tonal or harmonic. This is a <em>targeted false-positive killer</em></td>
+<td>Good</td>
+<td>✅</td>
+<td><strong>Missing → add</strong></td>
+</tr>
+<tr>
+<td><strong>Spectral kurtosis (per band)</strong></td>
+<td>Impulsiveness per band</td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> High</strong> — separates impulsive rain from stationary wind <em>within</em> the same band. The single best-motivated missing feature</td>
+<td><strong>Excellent</strong></td>
+<td>✅</td>
+<td><strong>Missing → add</strong></td>
+</tr>
+<tr>
+<td><strong>Modulation spectrum (&lt;20 Hz)</strong></td>
+<td>Rhythm of the envelope</td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Moderate-high</strong> — gusts modulate at ~0.1–1 Hz, rain intensity at ~0.01 Hz, insects at 10–100 Hz. Separates confounders by their <em>modulation rate</em>, not their spectrum</td>
+<td><strong>Excellent</strong></td>
+<td>⚠️</td>
+<td><strong>Missing → add</strong></td>
+</tr>
+<tr>
+<td>Chroma / harmonic ratio</td>
+<td>Pitch class, harmonicity</td>
+<td><strong>Low for rain, useful as a negative</strong> — rain has no pitch; high chroma ⇒ not rain</td>
+<td>Good</td>
+<td>⚠️</td>
+<td>❌ correctly absent</td>
+</tr>
+<tr>
+<td>LPC / PLP / cepstrum</td>
+<td>Source-filter modeling</td>
+<td><strong>Low</strong> — built for speech's source-filter structure; rain has no vocal-tract analogue</td>
+<td>—</td>
+<td>✅</td>
+<td>❌ correctly absent</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>On onset density — a documented trap.</strong> Counting impacts is the most physically direct feature imaginable: rain rate ≈ drops per second × mean drop volume. It should be the best feature. <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> It isn't, and Nystuen (1999) explains why: the acoustic sensor is disproportionately sensitive to drops &gt;3.5 mm, which <strong>acoustically mask smaller drops</strong> <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>. Once rain is more than light, impacts overlap and <em>cease to be separable events at all</em> — the signal becomes a continuous roar. So onset density saturates and then <em>inverts</em> exactly where you most need it. This is why every successful approach (Nystuen's ARA inversion, Xavier's PSD, SARID's MFCC) works on <strong>spectral</strong> rather than <strong>event-counting</strong> representations. Worth recording as a closed question so it isn't re-litigated.</p>
+<h3 id="13-the-normalization-finding-and-why-the-literature-predicted-it">1.3 The normalization finding, and why the literature predicted it<a class="headerlink" href="#13-the-normalization-finding-and-why-the-literature-predicted-it" title="Permanent link">¶</a></h3>
+<p>This project removed per-clip peak normalization from the DL pipeline and found it <em>helped</em> (commit <code>6595e1d</code>) <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong>. That reads like a lucky empirical hit. It wasn't — it was overdetermined:</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> Rain <em>amount</em> is encoded largely in <strong>absolute acoustic level</strong>. Per-clip peak normalization divides every clip by its own maximum, which is precisely a projection that destroys absolute level. It maps a drizzle clip and a downpour clip onto similar dynamic ranges. It cannot help; it can only discard the target signal. The only reason anyone does it is habit imported from speech/music ML, where absolute level is a nuisance variable. <strong>In rain acoustics absolute level is the label.</strong></p>
+<p><strong><span class="badge badge-paper" title="Published finding">PAPER</span> The correct alternative already exists.</strong> Ma &amp; Nystuen (2005) calibrate each hydrophone <em>absolutely</em> against the universal wind-generated ambient sound spectrum — a physical reference signal present in every recording — rather than against each clip's own peak. <strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span></strong> The direct analogue for us: normalize each <strong>campaign</strong> against its own <em>dry-clip</em> ambient spectrum (we have 666,310 dry clips — a large, free, per-campaign reference sample). This removes per-campaign mic/gain/mounting differences (a real cross-campaign confound) <strong>without</strong> touching within-campaign amplitude variation, which is the signal. This is a strictly better normalization than both "peak-normalize" and "don't normalize," and it is ~20 lines of code.</p>
+<h3 id="14-the-integration-time-result--the-highest-value-finding-in-this-document">1.4 The integration-time result — the highest-value finding in this document<a class="headerlink" href="#14-the-integration-time-result--the-highest-value-finding-in-this-document" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong> Xavier et al. report per-minute regression R² = 0.62, but <strong>hourly-accumulation R² &gt; 0.85</strong> — same model, same data, same predictions, only the aggregation window changed. Their stated reason: "some model estimates are not always perfectly synchronized with the rain gauge measurements."</p>
+<p><strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong> Two other papers independently establish the same scaling. Joss &amp; Waldvogel (1969): finite drop-sample sizes impose a hard statistical variance floor on any short-window rain estimate. Lee &amp; Zawadzki (2005): random error in rain-rate estimation falls with integration time and <strong>plateaus beyond ~2 hours</strong>. Villarini et al. (2008): temporal sampling uncertainty follows a scaling law in the sampling interval.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Apply this to our number and the picture changes.</strong> Our R² = 0.5429 is measured <strong>per 10-second clip against a 0.2 mm-per-tip bucket</strong>. Consider what that comparison actually is. A tipping bucket does not measure rainfall continuously — it emits a discrete event when 0.2 mm has accumulated. At 2 mm/h, that is one tip every 6 minutes. <strong>A 10-second clip therefore has a ~2.8% chance of containing a tip.</strong> The label for the other ~97% of light-rain clips is not "the rainfall during those 10 seconds"; it is an artifact of where the tip boundary happened to fall. We are not measuring model error. We are substantially measuring <strong>label quantization noise</strong>, and no model can fit it, because it is not a function of the audio.</p>
+<p>This reframes the entire benchmark comparison:</p>
+<ul>
+<li>SARID's R² = 0.765 and Monti's 0.787 are on <strong>4-second clips</strong> but with <strong>continuously-labeled, curated, rain-only</strong> data. They never pay the quantization tax we pay, because their labels aren't tip-derived in the same regime.</li>
+<li>Xavier's per-minute 0.62 is <em>below</em> our 0.5429-adjacent range in spirit, yet their hourly 0.85+ is well above — from the identical model.</li>
+</ul>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Test this immediately. It is nearly free and it may be worth more than every modeling idea in this document combined.</strong> We already have <code>timestamp</code> on every row. The experiment:</p>
+<ol>
+<li>Take the existing stacking-ensemble predictions on the test set. <strong>No retraining.</strong></li>
+<li>Group by campaign, resample predictions and labels to 1 min / 5 min / 15 min / 1 h / 3 h.</li>
+<li>Report R² at each aggregation.</li>
+<li>Plot R² vs integration time.</li>
+</ol>
+<p>Cost: a few hours of pandas. Possible outcomes, all valuable:
+- <strong>R² rises sharply with aggregation</strong> (as Xavier, Joss, and Lee all predict) → our per-clip number was always the wrong headline metric; we have a substantially better instrument than we've been claiming, and the paper writes itself.
+- <strong>R² stays flat</strong> → the error is genuinely model error, not sampling/label noise, and three literature results don't transfer to our setup. That is <em>also</em> a real finding, and it would redirect effort correctly.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> I'd put meaningful odds on the first. And note the asymmetry: a rain gauge that is accurate hourly is <em>operationally useful</em> for flood warning, irrigation, and hydrology — none of which consume 10-second rainfall estimates. <strong>We may have been optimizing a metric no user wants, and under-reporting the one they do.</strong></p>
+<hr />
+<h2 id="2-rain-physics">2. Rain Physics<a class="headerlink" href="#2-rain-physics" title="Permanent link">¶</a></h2>
+<h3 id="21-two-mechanisms-and-why-this-project-only-sees-one-of-them">2.1 Two mechanisms, and why this project only sees one of them<a class="headerlink" href="#21-two-mechanisms-and-why-this-project-only-sees-one-of-them" title="Permanent link">¶</a></h3>
+<p><strong>[PAPER + DERIVED]</strong> A raindrop striking water makes sound by <strong>two</strong> distinct mechanisms (Nystuen 1996; Liu et al. 2021):</p>
+<ol>
+<li><strong>The impact ("splat")</strong> — the initial momentum transfer. Broadband, brief (~sub-ms), amplitude scaling with drop kinetic energy.</li>
+<li><strong>Bubble entrainment</strong> — for a specific range of drop sizes and impact angles, the splash traps an air bubble which oscillates and radiates a <strong>loud, narrowband, damped sinusoid</strong>. This is <em>much</em> louder than the impact itself.</li>
+</ol>
+<p>The bubble frequency follows <strong>Minnaert's resonance</strong>:</p>
+<p>$$f_0 = \frac{1}{2\pi a}\sqrt{\frac{3\gamma P_0}{\rho}}$$</p>
+<p><strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span></strong> With γ = 1.4, P₀ = 101325 Pa, ρ = 1000 kg/m³: f₀ ≈ <strong>3.28 / a</strong> kHz for bubble radius <em>a</em> in mm. A 1 mm bubble rings at ~3.3 kHz; a 0.3 mm bubble at ~11 kHz.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> This equation is why Nystuen's inversion works at all.</strong> Bubble size correlates with drop size, so drop size maps to a <em>ringing frequency</em> — and the sound field becomes a <strong>linear superposition of drop-size-specific narrowband signatures</strong>. That linearity is what makes DSD retrieval a tractable inverse problem rather than a black box. It is the single most elegant result in this literature.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> But here is the part that matters for us, and that no paper in our library states, because every one of them is either underwater or doesn't ask.</strong> Minnaert applies to bubbles <strong>in water</strong>. Nystuen's hydrophone sits <em>in</em> the medium where the bubbles ring. <strong>Our microphone is in air, above a solid surface.</strong> We are not measuring bubble entrainment. We are measuring:</p>
+<ul>
+<li><strong>the impact transient</strong>, transmitted through air, and</li>
+<li><strong>the resonant response of whatever the drop hit</strong> — a plate, a roof, a leaf, soil — excited by that impulse.</li>
+</ul>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Consequences, which are large and mostly unrecognized in this project's docs:</strong></p>
+<ol>
+<li><strong>Our surface is part of our instrument.</strong> The spectral peak we regress against is substantially a property of the <em>mounting surface's</em> modal response, not of the rain. Change the surface, change the transfer function. This is testable and probably visible in our cross-campaign variance.</li>
+<li><strong>This is a <em>fixable</em> confound and possibly an <em>exploitable</em> design freedom.</strong> Nystuen is stuck with the ocean. We get to <em>choose</em> our surface — and therefore to <em>engineer</em> our transfer function. A surface with a flat, broadband, well-damped impulse response would make the audio→intensity map more nearly linear and more nearly site-invariant. <strong>This is the RHD commercial disdrometer's entire design thesis</strong>: a polished stainless-steel hemisphere, 402 cm², sealed, ±15% intensity accuracy <strong>[PAPER, datasheet]</strong>. They didn't pick a hemisphere for looks. A curved rigid shell has no strong low-order modes in-band and presents the same impact geometry regardless of rain inclination.</li>
+<li><strong>It reframes cross-campaign generalization.</strong> Some of our cross-campaign error may not be "the model doesn't transfer" but "the <em>instrument</em> changed between campaigns." Those demand completely different fixes — the second is solved by a fixed sensing surface, not by more data or a better model.</li>
+</ol>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> The highest-value physics experiment available to us:</strong> stratify existing test-set error by campaign, and check whether residual variance correlates with anything we know about each campaign's mounting/surface. If yes, a standardized sensing surface (Section 6) is worth more than any modeling work on the roadmap. We have the data to answer this today.</p>
+<h3 id="22-the-physics-table">2.2 The physics table<a class="headerlink" href="#22-the-physics-table" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phenomenon</th>
+<th>Governing relation</th>
+<th>Implication for this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Terminal velocity</td>
+<td>v ≈ 9.65 − 10.3·e^(−0.6D) m/s (Atlas), D in mm</td>
+<td>Impact energy ∝ D³v² — steeply drop-size dependent. Equal rain <em>rates</em> with different DSDs deliver very different kinetic energy ⇒ different loudness. <strong>This is the physical root of our regression error floor.</strong></td>
+</tr>
+<tr>
+<td>Kinetic → acoustic conversion</td>
+<td>Dipole radiation model, measured per drop size (Liu 2021) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Loudness→intensity is monotone but <strong>DSD-dependent</strong>, not a function of rain rate alone. Explains why energy features are strong-but-imperfect.</td>
+</tr>
+<tr>
+<td>Minnaert bubble resonance</td>
+<td>f₀ ≈ 3.28/a kHz (a in mm) <strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span></strong></td>
+<td>Underwater only. <strong>We don't see it.</strong> Retires a whole class of borrowed intuition.</td>
+</tr>
+<tr>
+<td>Surface modal response</td>
+<td>Plate/shell eigenmodes</td>
+<td><strong>Our actual transfer function.</strong> Under-recognized; see 2.1.</td>
+</tr>
+<tr>
+<td>Wind-driven rain inclination</td>
+<td>Oblique, super-terminal impact (Dunkerley 2025) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Wind changes impact energy <em>and</em> effective catchment. Confounds audio <strong>and</strong> the gauge label. See Section 7.</td>
+</tr>
+<tr>
+<td>Water film damping</td>
+<td>Growing film attenuates and detunes surface response</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> Predicts <strong>hysteresis</strong>: the same rain rate sounds different at storm onset (dry surface) vs 20 min in (wet surface). A <em>time-since-rain-onset</em> feature is derivable from our timestamps at zero sensor cost. <strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> — nobody in our library models this.</strong></td>
+</tr>
+<tr>
+<td>Air absorption</td>
+<td>~0.1–1 dB/100 m below 4 kHz</td>
+<td>Negligible at our ranges. Non-issue; stop worrying about it.</td>
+</tr>
+<tr>
+<td>DSD variability by rain type</td>
+<td>~41% random error from a single static R–Z relation (Lee &amp; Zawadzki 2005) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong>The hard ceiling.</strong> See 2.3.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="23-the-dsd-ceiling--why-a-single-regression-function-cannot-win">2.3 The DSD ceiling — why a single regression function cannot win<a class="headerlink" href="#23-the-dsd-ceiling--why-a-single-regression-function-cannot-win" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong> Lee &amp; Zawadzki (2005), 20,000+ one-minute disdrometer DSDs over 5 years: a single climatological R–Z relationship carries <strong>~41% random error</strong> in instantaneous rain rate. Even <em>daily-fitted</em> relationships leave 32%. DSD variability <em>between physical processes</em> (convective vs stratiform) alone causes a 41% accumulation bias. Accurate estimation (~7% error) is <strong>only</strong> achievable once the underlying physical process is identified.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Read the analogy carefully, because it is exact.</strong> Radar infers R from Z through a mapping that DSD variability breaks. We infer R from acoustic features through a mapping that <strong>the same DSD variability breaks, for the same reason</strong> — both Z and acoustic energy are high-order moments of the drop-size distribution, and rain rate is a different moment. Two rains with identical R but different DSD produce different Z <em>and</em> different sound. This is not a modeling deficiency. <strong>It is an identifiability problem: R is not a function of our observable.</strong></p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> Therefore: a single global audio→intensity regressor has an <strong>irreducible error floor</strong>, and R² ≈ 0.5–0.6 per-clip may be <em>near it</em>. This is arguably the most important defensive result in the library — it means our gap to SARID's 0.765 is partly a <em>dataset-difficulty</em> gap, not a <em>competence</em> gap, and it predicts that SARID's own number would fall on multi-regime field data.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> But Lee &amp; Zawadzki also state the escape route: <strong>condition on the regime</strong>. ~7% error is achievable <em>given</em> the physical process. And here is the asymmetry that makes this exciting for us rather than depressing: <strong>radar cannot easily identify the regime from Z alone — but we may be able to identify it from sound.</strong> Convective and stratiform rain differ in DSD, in intermittency, in gustiness, in onset sharpness — all acoustically observable, none available to a single-frequency radar.</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Regime-conditioned mixture-of-experts.</strong> Cluster clips (or storm episodes) into acoustic regimes — unsupervised, or weakly supervised by intermittency/duration statistics — and train per-regime regressors with a learned gating network. This is:
+- <strong>literature-mandated</strong> (Lee &amp; Zawadzki quantify the gain: 41% → ~7%),
+- <strong>not attempted</strong> in SARID, Monti, or Xavier,
+- <strong>compatible</strong> with our existing stacking ensemble (regime becomes a stacker input),
+- and <strong>genuinely publishable</strong> — "regime-conditioned acoustic rainfall estimation" is a clean contribution with a physics story behind it.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> It also explains our hurdle-model failure.</strong> We tried hurdle models twice and both lost (hard-gate R² = −0.097, soft-gate 0.076 vs 0.226 single regressor) <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong>. The natural reading was "gating doesn't help here." The better reading: we gated on the <strong>wrong variable</strong>. Rain/no-rain is a <em>detection</em> split; Lee &amp; Zawadzki say the split that matters is <em>rain regime</em>. A gate on "is it raining" adds classifier errors without reducing DSD variance — it multiplies error without buying identifiability. A gate on <em>regime</em> attacks the actual variance source. <strong>The hurdle experiments do not refute mixture-of-experts. They refute one specific, poorly-chosen gate.</strong> Worth correcting in the docs, because "gating was tried and failed" is currently discouraging exactly the right next experiment.</p>
+<hr />
+<h2 id="3-signal-processing">3. Signal Processing<a class="headerlink" href="#3-signal-processing" title="Permanent link">¶</a></h2>
+<h3 id="31-choices-and-their-hidden-justifications">3.1 Choices, and their hidden justifications<a class="headerlink" href="#31-choices-and-their-hidden-justifications" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>Ours</th>
+<th>Literature</th>
+<th>Inference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sample rate</td>
+<td>8 kHz <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>SARID 44.1k; Xavier 24/48k</td>
+<td><strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span> Adequate.</strong> All evidence-backed bands &lt; 3.4 kHz (Sec 0.1). Not a limitation.</td>
+</tr>
+<tr>
+<td>FFT window</td>
+<td>2048 (librosa default)</td>
+<td><strong>4096 markedly improves MFCC models</strong> (Monti) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Test 4096.</strong> Reason: rain is quasi-stationary, so longer windows buy frequency resolution at no stationarity cost. <strong>But note — Monti's 4096 was at 44.1 kHz (93 ms). At our 8 kHz, 4096 = 512 ms.</strong> Don't copy the number, copy the <em>duration</em>: 93 ms at 8 kHz ≈ <strong>1024 samples</strong>, i.e. <em>shorter</em> than our current 2048. <strong>The naive port would be exactly backwards.</strong> Test 1024 / 2048 / 4096 and let the data decide.</td>
+</tr>
+<tr>
+<td>PSD estimator</td>
+<td>Not used</td>
+<td>Welch, <code>nperseg=1024</code> (Xavier) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Add.</strong> Sec 0.1.</td>
+</tr>
+<tr>
+<td>Denoising</td>
+<td>None</td>
+<td><strong>RD-UNet</strong> lightweight audio denoiser, suppresses urban noise while preserving rain (J. Hydrology 2026) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Relevant</strong> — our false positives are loud non-rain sounds <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong>. But see 3.2.</td>
+</tr>
+<tr>
+<td>Low-pass</td>
+<td>None</td>
+<td>2–3 kHz slightly helps; 1 kHz hurts (Monti) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span> Consistent with Sec 0.1</strong> — 1 kHz destroys the 1.6–2.7 kHz <em>detection</em> band while sparing the <em>amount</em> band. Monti's asymmetric result is explained by our band split. Nice cross-confirmation.</td>
+</tr>
+<tr>
+<td>Normalization</td>
+<td>Per-clip peak → <strong>removed</strong> <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>Absolute self-calibration (Ma &amp; Nystuen) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span></strong> Per-campaign dry-ambient calibration (Sec 1.3).</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="32-a-caution-on-denoising">3.2 A caution on denoising<a class="headerlink" href="#32-a-caution-on-denoising" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> Denoising before a <em>regression</em> task is riskier than it looks. A denoiser trained to "preserve rain, suppress noise" is trained on a <em>perceptual</em> or <em>reconstruction</em> objective, and it will happily alter <strong>absolute level</strong> — which, per 1.3, <strong>is our label</strong>. A denoiser that improves detection could plausibly <em>degrade</em> amount estimation by compressing dynamic range. RD-UNet's paper reports rainfall accuracy gains <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>, so this concern may be unfounded in practice, but it must be measured <strong>separately for the classifier and the regressor</strong>. Given Section 0.1, I'd expect denoising to help detection more than regression. Do not deploy it on the strength of a single aggregate metric.</p>
+<h3 id="33-underused-dsp-with-a-clear-rationale">3.3 Underused DSP with a clear rationale<a class="headerlink" href="#33-underused-dsp-with-a-clear-rationale" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Spectral kurtosis.</strong> The 4th standardized moment of the spectrum, per band. Impulsive processes (rain) have high kurtosis; Gaussian-ish stationary processes (wind, traffic hum, electronic noise) have kurtosis ≈ 0. This separates rain from wind <strong>inside the same frequency band</strong>, which no energy feature can do. Cheap, well-founded, and absent from every paper in our library. Best single missing feature.</li>
+<li><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Modulation spectrum.</strong> FFT of the <em>envelope</em>, 0–20 Hz. Wind gusts ~0.1–1 Hz; rain intensity drifts ~0.01 Hz; insects/birds 10–100 Hz. Confounders separate cleanly by modulation rate even when their spectra overlap rain's.</li>
+<li><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Coherence between two mics.</strong> Rain impacts are spatially incoherent (independent drops); wind noise at the diaphragm is <em>pseudo-sound</em> (non-propagating turbulent pressure) and is also incoherent — <strong>but</strong> it is incoherent <em>differently</em>, and distant traffic/speech is <em>coherent</em>. Two cheap mics + magnitude-squared coherence gives a wind/rain/interference discriminator with no ML at all. This is standard array processing and it is unexploited in rain acoustics. Requires a hardware change; see Section 6.</li>
+</ul>
+<hr />
+<h2 id="4-machine-learning">4. Machine Learning<a class="headerlink" href="#4-machine-learning" title="Permanent link">¶</a></h2>
+<h3 id="41-what-the-cross-paper-record-actually-shows">4.1 What the cross-paper record actually shows<a class="headerlink" href="#41-what-the-cross-paper-record-actually-shows" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Best reported</th>
+<th>Setting</th>
+<th>Inference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Integrated PSD + Random Forest</td>
+<td>R² 0.62 (1 min), <strong>&gt;0.85 (hourly)</strong>, cross-site 0.69/0.93 (Xavier) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Amazon, 1-min, forest</td>
+<td><strong>Simple + physical + long integration beats complex + short.</strong> The most under-appreciated result in the field.</td>
+</tr>
+<tr>
+<td>MFCC + Transformer</td>
+<td>R² 0.765 (SARID) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Curated, rain-only, 4 s</td>
+<td>The architectural template.</td>
+</tr>
+<tr>
+<td>Stacked transformers (MFCC/Mel/STFT)</td>
+<td>R² 0.787 (Monti) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Same benchmark</td>
+<td>SOTA. <strong>Saturating</strong> — +0.022 over SARID for a large complexity jump.</td>
+</tr>
+<tr>
+<td>Raw-waveform CNN</td>
+<td>75% (7-class), 93% ±1 class (Avanzato) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Urban</td>
+<td>Adjacent-class confusion ⇒ the mapping is <strong>smooth</strong> ⇒ regression is the right formulation.</td>
+</tr>
+<tr>
+<td>KNN on piezo</td>
+<td>89.95% (Cruz) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Disdrometer</td>
+<td>Even trivial ML separates rain from noise. Detection is easy; <strong>amount is the hard part.</strong></td>
+</tr>
+<tr>
+<td>MFCC + CNN, optical+acoustic</td>
+<td>99.88% day / 70.56% night, <em>real</em> rain (2026) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Simulator + field</td>
+<td><strong>The most instructive number in this table</strong> — see below.</td>
+</tr>
+<tr>
+<td><strong>This project: learned stack</strong></td>
+<td><strong>R² 0.5429</strong> <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>19 campaigns, 85% dry, 10 s</td>
+<td>Realistic, uncurated, both tasks.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> On that 99.88% → 70.56% collapse.</strong> A 2026 optical+acoustic CNN scores 99.88% on an artificial rainfall simulator and 70.56% on real nighttime rain. That ~30-point drop <strong>is the entire research field in one number.</strong> It is not a bad paper; it is an honest demonstration that curated/simulated conditions inflate scores enormously, and that the gap is largest exactly where a real deployment lives. <strong>Our 0.5429 on 19 uncurated field campaigns is not obviously worse than SARID's 0.765 on one curated campus — it may well be better, measured honestly.</strong> We cannot claim that without a head-to-head, which leads directly to:</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Run our pipeline on the public SARID dataset.</strong> It is public. This is the single highest-value <em>credibility</em> experiment available, and it is pure engineering — no new data, no new physics:
+- If we score near 0.765–0.787 on SARID, then our 0.5429 on field data is <strong>calibrated evidence that field data is harder</strong>, and the headline result becomes a rigorous, quantified difficulty gap rather than an apparent shortfall. That is a strong paper.
+- If we score well below 0.765 on SARID, we have a genuine model deficiency and we've found it cheaply.</p>
+<p>Either way we learn something decisive. <strong>Nothing else on this list has that property.</strong> This should arguably be the next thing done after the integration-time test.</p>
+<h3 id="42-the-full-scale-dl-degradation--a-hypothesis-the-literature-suggests">4.2 The full-scale DL degradation — a hypothesis the literature suggests<a class="headerlink" href="#42-the-full-scale-dl-degradation--a-hypothesis-the-literature-suggests" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong> Every DL architecture performs <em>worse</em> at 607k rows than at its own 40k pilot (Transformer: 0.347 pilot → 0.111 full, then −0.108 by epoch 40). An LR schedule helped partially; the stability diagnostic found lower-LR/larger-batch more stable but did not resolve it. Currently the project's biggest open problem.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> An additional hypothesis worth testing, orthogonal to the optimizer story.</strong> The pilot is a <strong>random 40k subsample across all campaigns</strong>. The full set is <strong>607k rows with per-campaign chronological structure</strong> and campaigns that differ wildly in rainy-rate (Feb–Mar 2026 is ~93% rainy; others ~9%) <strong>[MEASURED, PROGRESS.md Stage 3]</strong>. So the pilot and the full run are <strong>not the same distribution</strong> — the pilot is IID-shuffled, the full run is not. A random 40k subsample is, in effect, a <em>balanced, decorrelated</em> view; the full set is a <em>clustered, heteroscedastic</em> one.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> If true, this is not an optimizer bug at all — it's that <strong>more data made the problem harder, not easier</strong>, because the extra data brought campaign-level distribution shift with it. Two cheap diagnostics separate the hypotheses:
+1. <strong>Train on a random 607k-row <em>shuffled</em> pass vs the chronological one.</strong> If shuffled trains fine and chronological doesn't, it's distribution shift, not the learning rate.
+2. <strong>Train on 40k drawn from a <em>single</em> campaign vs 40k drawn across all.</strong> Same logic, cheaper.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> This also predicts the ensemble result we already see. The stack (0.5429) massively outperforms every base model (best 0.277) <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong>. That gap is <em>unusually</em> large for stacking. A meta-model that learns "trust the CNN in these conditions, the XGBoost in those" is, functionally, <strong>already doing regime-conditioning</strong> (Section 2.3) — implicitly, without being told. The stack's outsized gain is <em>evidence for</em> the regime hypothesis. Making it explicit should help more.</p>
+<h3 id="43-modern-methods-ranked-by-expected-value-here">4.3 Modern methods, ranked by expected value here<a class="headerlink" href="#43-modern-methods-ranked-by-expected-value-here" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Audio foundation-model embeddings (BEATs / AST / CLAP / PANNs).</strong> Pretrained on AudioSet-2M, which contains substantial rain audio. Extract embeddings, freeze, fit a light head. <strong>Why it's promising:</strong> our labels are noisy and imbalanced but our <em>inputs</em> are plentiful — exactly the regime where pretrained representations win. <strong>Why it might not:</strong> these models are trained at 16 kHz on <em>semantic</em> discrimination ("is this rain?"), and semantic embeddings are often deliberately <strong>invariant to absolute level</strong> — which is our label (1.3). Recent work probing low-level acoustic attributes in CLAP embeddings suggests such invariances are real. <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> I'd predict a large gain for the classifier and a disappointing one for the regressor.</strong> Test both separately; that asymmetry is itself a publishable observation.</li>
+<li><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Weak supervision from reanalysis.</strong> Çoban et al. train on MERRA-2 weak labels and end up <strong>more accurate than their own noisy teacher</strong> <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>. Directly enables expanding beyond gauge-paired campaigns.</li>
+<li><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Self-supervised pretraining on our 666k dry clips.</strong> We have a huge unlabeled-negative corpus. Contrastive or masked-reconstruction pretraining on <em>our own</em> audio sidesteps the domain gap that foundation models carry.</li>
+<li><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Skip for now:</strong> federated learning (no fleet), meta-learning (no task distribution), continual learning (no drift measurements yet). All are solutions to problems we don't have evidence of.</li>
+</ul>
+<hr />
+<h2 id="5-sensor-fusion">5. Sensor Fusion<a class="headerlink" href="#5-sensor-fusion" title="Permanent link">¶</a></h2>
+<h3 id="51-wind--necessary-but-not-the-way-anyone-has-tried">5.1 Wind — necessary, but not the way anyone has tried<a class="headerlink" href="#51-wind--necessary-but-not-the-way-anyone-has-tried" title="Permanent link">¶</a></h3>
+<p>The library is emphatic and unanimous:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kochendorfer et al. (2017) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Unshielded gauges catch <strong>&lt;50%</strong> of solid precip above 5 m/s. Correction from <strong>wind speed + temperature alone</strong> cut bias −12%→0% (US), −27%→−4% (Norway), cross-validated across climates.</td>
+</tr>
+<tr>
+<td>Nystuen (1999) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Above 5 m/s wind, disdrometer <em>and</em> acoustic gauges bias low.</td>
+</tr>
+<tr>
+<td>Pensieri et al. (2015) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>4 m/s wind can <strong>erase</strong> the acoustic signature of drizzle.</td>
+</tr>
+<tr>
+<td>Habib et al. (1999) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Wind correction <strong>must</strong> be applied at ~1-min resolution; coarser averaging <strong>overestimates</strong> the bias. Wind speed alone is incomplete — DSD matters.</td>
+</tr>
+<tr>
+<td>Dunkerley (2025) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Rain inclination is itself acoustically measurable.</td>
+</tr>
+<tr>
+<td>Pathan et al. (2021) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Wind features <em>positively</em> predict precipitation (r ≈ 0.24–0.26) — a signal, not only a nuisance.</td>
+</tr>
+<tr>
+<td>Monti &amp; Ntalampiras (2025) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong>Naively concatenating meteorological features did not improve performance.</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Read the last two rows together — that is the whole lesson, and it is easy to miss.</strong> Wind is unambiguously important (six papers) <em>and</em> naive wind features demonstrably don't help (one paper, on the exact benchmark we compare against). These are not contradictory. They tell us <strong>wind enters multiplicatively, not additively.</strong></p>
+<p>Wind doesn't <em>add</em> to the rainfall signal. It <strong>modulates the transfer function</strong> between rainfall and sound (masking drizzle, changing impact angle and energy) <strong>and simultaneously corrupts the label</strong> (gauge undercatch). Concatenating wind speed as feature #176 asks a model to learn an <em>interaction</em> from a <em>main effect</em> — and tree/dense models are notoriously sample-inefficient at that. Monti's negative result is exactly what you'd predict.</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Three structurally different ways to use wind, in increasing ambition:</strong>
+1. <strong>Label correction, not model input.</strong> Follow Kochendorfer: correct the <em>tipping-bucket ground truth</em> for wind undercatch <strong>before training</strong>, at 1-min resolution (Habib's constraint). This treats wind as <strong>label noise</strong> — which the literature says it partly is — rather than as a predictor. <strong>Nobody in our library has done this for an acoustic model.</strong> Novel and well-founded.
+2. <strong>Multiplicative gating.</strong> Feed wind into a gate that <em>scales</em> the acoustic model's output, rather than concatenating it. Matches the physics.
+3. <strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Estimate wind from the same audio — and skip the sensor.</strong> Wind noise at a microphone is spectrally distinctive (low-frequency, high energy, <strong>low kurtosis</strong>, smooth modulation envelope, incoherent across a mic pair). Ma &amp; Nystuen already invert the <em>universal wind-generated sound spectrum</em> underwater <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>; Dunkerley measures rain <em>inclination</em> acoustically <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>. <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> So: add a <strong>wind-speed auxiliary head</strong> to the acoustic model, trained multi-task. If it works, the deployment stays <strong>single-sensor</strong> — no anemometer, no extra BOM, no extra failure mode — while gaining the covariate the whole literature says we need. <strong>This is the most novel idea in this document.</strong> It is genuinely high-risk (needs wind ground truth to train, which we don't have) and genuinely high-reward (single-mic wind-aware rain sensing is a patentable, publishable result).</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> The pragmatic first step,</strong> given we have no wind data at all: instrument the <strong>next</strong> campaign with a cheap anemometer. Everything above needs wind ground truth. Green et al.'s multi-disk probe <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong> and any cheap ultrasonic unit are candidates. <strong>Nothing in this section is testable until we record wind.</strong> That makes it a <em>data-collection</em> priority, not a modeling one — and it should start now, because it gates the most valuable ideas here.</p>
+<h3 id="52-the-rest-of-the-fusion-space">5.2 The rest of the fusion space<a class="headerlink" href="#52-the-rest-of-the-fusion-space" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Sensor</th>
+<th>Value</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Anemometer</strong></td>
+<td>Unlocks all of 5.1</td>
+<td><strong>Highest priority.</strong> Blocks everything.</td>
+</tr>
+<tr>
+<td><strong>Second microphone</strong></td>
+<td>Coherence-based wind/rain/interference separation (3.3); no ML needed</td>
+<td><strong>High.</strong> Cheap; XIAO ESP32-S3 has a second I2S slot.</td>
+</tr>
+<tr>
+<td><strong>Accelerometer / piezo on the sensing surface</strong></td>
+<td>Measures structural excitation directly, <strong>immune to airborne acoustic noise</strong> (traffic, speech, birds)</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Very high, under-rated.</strong> It attacks our <em>documented</em> dominant false-positive mode — loud non-rain sounds <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong> — at the physics level rather than the model level. <strong>This is what lokalRAIN chose</strong>: vibration sensors, not microphones <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>. Independent, well-funded convergence on the same reasoning.</td>
+</tr>
+<tr>
+<td><strong>Temperature/humidity</strong></td>
+<td>Kochendorfer's correction needs temperature; cheap</td>
+<td>Moderate. Nearly free (BME280).</td>
+</tr>
+<tr>
+<td><strong>Tipping bucket</strong></td>
+<td>Current ground truth</td>
+<td>Keep. <strong>Upcoming tipping-bucket dataset (2026-06-18→) will improve label quality</strong> — see project memory.</td>
+</tr>
+<tr>
+<td><strong>Disdrometer</strong></td>
+<td>Would give <strong>DSD</strong> — the missing variable behind the Section 2.3 ceiling</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> The scientifically decisive instrument.</strong> Expensive, but one co-deployed disdrometer season would let us <em>test</em> the regime hypothesis directly instead of inferring it. Highest scientific value per unit cost.</td>
+</tr>
+<tr>
+<td><strong>Camera</strong></td>
+<td>SARID's own proposed future work</td>
+<td>Low — defeats the "cheap, works at night, no privacy issue" premise.</td>
+</tr>
+<tr>
+<td><strong>Radar / satellite (GPM IMERG)</strong></td>
+<td>Weak labels, cross-validation</td>
+<td>Moderate. Xavier's model <strong>beat</strong> IMERG (RMSE 1.33 vs 2.03; 0.68 vs 2.3 mm/h) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong> — a strong, quotable framing: a $30 mic outperformed a satellite constellation at hourly resolution.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="6-deployment">6. Deployment<a class="headerlink" href="#6-deployment" title="Permanent link">¶</a></h2>
+<h3 id="61-where-this-project-already-is">6.1 Where this project already is<a class="headerlink" href="#61-where-this-project-already-is" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong> <code>firmware/xiao_esp32s3_inmp441_test/</code> exists: XIAO ESP32-S3 + INMP441 I2S MEMS mic, PlatformIO, with Wi-Fi audio streaming to the trained ensemble and a dual-mic comparison mode against the legacy analog electret module. This is further along than the handbook's "Edge Device (future) — not yet built" note suggests, and the docs should say so.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> The INMP441 choice is better-founded than it may have appeared.</strong> Digital I2S output means no analog gain stage, no ADC noise, and — critically for 1.3 — <strong>a stable, reproducible absolute sensitivity across units</strong> (−26 dBFS ±1 dB). For a task where <strong>absolute level is the label</strong>, a digital MEMS mic with unit-to-unit consistency is not a convenience, it is a <em>correctness requirement</em>. An analog electret + LM393 module has no such guarantee, and cross-unit gain variation would masquerade as rainfall variation. The migration away from it is well-motivated on exactly these grounds.</p>
+<h3 id="62-the-deployment-ladder">6.2 The deployment ladder<a class="headerlink" href="#62-the-deployment-ladder" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Platform</th>
+<th>Feasible today?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>T0: streaming</strong></td>
+<td>ESP32-S3 → Wi-Fi → server ensemble</td>
+<td><strong>Built</strong> <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+</tr>
+<tr>
+<td><strong>T1: on-device features, server model</strong></td>
+<td>ESP32-S3 computes band-power/PSD scalars, sends ~20 floats/10 s</td>
+<td><strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span> Easily.</strong> ~1000× bandwidth reduction vs raw audio. <strong>This is the sweet spot and it is nearly free</strong> — Section 0.1's band features are two FFT-derived scalars.</td>
+</tr>
+<tr>
+<td><strong>T2: on-device classifier</strong></td>
+<td>Quantized detection model on-device</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Very likely.</strong> Detection is the easy task (Cruz: 89.95% with <em>KNN</em>). A small tree/MLP on band-power features fits trivially.</td>
+</tr>
+<tr>
+<td><strong>T3: on-device regression</strong></td>
+<td>Full intensity estimate on-device</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Plausible at reduced accuracy.</strong> Xavier got hourly R² &gt; 0.85 from <strong>integrated PSD + RF</strong> — an RF over band powers <em>is</em> deployable on an S3.</td>
+</tr>
+<tr>
+<td><strong>T4: full DL on-device</strong></td>
+<td>Transformer/CNN on MCU</td>
+<td><strong>Not worth it.</strong> Our own DL doesn't beat the stack, and the stack needs 4 models. Skip.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> The strategic point.</strong> T1/T2 capture most of the operational value at a fraction of the effort, and T3 is <em>reachable with the classical track we already have</em> — precisely because Xavier proved PSD+RF is enough when you integrate over an hour, and because Section 1.4 suggests hourly is the metric that matters anyway. <strong>The classical track, long treated in this repo as the baseline the DL track exists to beat, is in fact the deployment track.</strong> That is a re-framing worth internalizing: the "boring" pipeline is the one that ships.</p>
+<h3 id="63-power-and-telemetry">6.3 Power and telemetry<a class="headerlink" href="#63-power-and-telemetry" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong> Guico et al. (2018): solar + weatherproof + SMS telemetry, deployed. OpenIoT's ARG: Raspberry Pi 4, USB mic, 50 Ah Li-ion, 100 W PV, LoRaWAN → ChirpStack — but <strong>no quantization, no on-device inference, and no published accuracy metrics</strong>. <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> That is a heavy, expensive node doing what a $10 MCU at T1 could do; the engineering wrapper is solved, but the compute architecture is over-provisioned. Our T1 design would be strictly better on power and cost — and unlike OpenIoT's, ours would have measured accuracy behind it.</p>
+<p><strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span></strong> LoRaWAN payload limits (~51–222 bytes) make T0 streaming impossible and T1 trivial — 20 float16s = 40 bytes. <strong>The telemetry choice forces the architecture</strong>, and it forces it toward the tier we should want anyway.</p>
+<h3 id="64-the-sensing-surface--the-missing-hardware-decision">6.4 The sensing surface — the missing hardware decision<a class="headerlink" href="#64-the-sensing-surface--the-missing-hardware-decision" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> Per 2.1, our transfer function <em>is</em> the surface. Yet the surface is currently whatever the mic happened to be mounted near, and it likely varies across our 19 campaigns. The RHD datasheet shows the mature answer: an engineered, sealed, rigid hemisphere (402 cm², ±15%) <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>.</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> A standardized sensing surface is probably the highest-leverage <em>hardware</em> change available</strong> — bigger than the mic, bigger than the MCU. Design targets: rigid, curved (inclination-invariant), well-damped (no ringing modes in 0.4–3.4 kHz), sealed, and <strong>identical across every deployment</strong> so the transfer function is a constant rather than a per-campaign random effect. This converts cross-campaign generalization from a modeling problem into a manufacturing one — which is a much better problem to have.</p>
+<hr />
+<h2 id="7-generalization">7. Generalization<a class="headerlink" href="#7-generalization" title="Permanent link">¶</a></h2>
+<p><strong><span class="badge badge-paper" title="Published finding">PAPER</span> The strongest generalization result in the field is Xavier's</strong>: train at one Amazon site, test 30 km away across <em>different vegetation types</em>, get 97–98% detection and hourly R² 0.69/0.93. Their attributed cause: choosing the <strong>wider 1641–2719 Hz band over the higher-correlating 0–797 Hz band, explicitly to avoid overfitting.</strong></p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> That is a deliberate accuracy-for-transferability trade, and it is the most instructive engineering decision in the library.</strong> They knowingly gave up correlation (0.72 → 0.67) to buy site-invariance. <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> It also aligns with 2.1: the low band is where <em>surface modal response</em> dominates (site-specific), while the mid band is closer to drop-impact physics (universal). <strong>Xavier's empirical band choice and our surface-transfer-function argument independently predict the same thing</strong> — the low band is site-contaminated. Two very different routes, one conclusion.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Uncomfortable implication for us.</strong> Our top <em>regression</em> features (mel bands 7–8, 400–572 Hz) sit in <strong>exactly the band Xavier rejected as overfitting-prone</strong>. Our SHAP ranking optimizes in-distribution accuracy; it has no way to express "this band won't transfer." <strong>We may be systematically selecting site-specific features and calling them important.</strong> Per-campaign chronological splitting protects against <em>temporal</em> leakage — which this project correctly implemented — but <strong>not against spatial/surface non-transferability</strong>, because every campaign shares the same site and surface.</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Leave-one-campaign-out cross-validation.</strong> We have 19 campaigns. Train on 18, test on 1, rotate. This is the <em>only</em> honest estimate of cross-deployment performance we can produce from existing data, and it costs nothing but compute. <strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> I would expect a meaningful drop versus the current chronological split — and that drop is the number a deployment actually cares about.</strong> If the low-band features degrade most under LOCO, that confirms Xavier's concern applies to us, and it would justify deliberately trading in-distribution R² for a transferable model. <strong>This is the single best use of our multi-campaign dataset, and it is the thing our dataset has that SARID's and Xavier's do not.</strong> It's a paper.</p>
+<p><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Ambient-referenced calibration</strong> (1.3) and a <strong>standardized surface</strong> (6.4) attack the same problem from the software and hardware sides respectively.</p>
+<hr />
+<h2 id="8-outputs-beyond-rainfall">8. Outputs Beyond Rainfall<a class="headerlink" href="#8-outputs-beyond-rainfall" title="Permanent link">¶</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Feasibility</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rain/no-rain</td>
+<td><strong>Done</strong> — AUC 0.887 <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>Mature.</td>
+</tr>
+<tr>
+<td>Intensity (mm/h)</td>
+<td><strong>Done</strong> — R² 0.5429 <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>Per-clip; see 1.4.</td>
+</tr>
+<tr>
+<td><strong>Hourly accumulation</strong></td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Likely much better than per-clip</strong></td>
+<td><strong>The metric users want.</strong> Sec 1.4. <strong>Test first.</strong></td>
+</tr>
+<tr>
+<td>Rain onset/cessation</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Easy, high operational value</strong></td>
+<td>Flood warning cares about <em>onset latency</em>, not mm (NHESS 2023 <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>). A detector at low threshold is already close.</td>
+</tr>
+<tr>
+<td><strong>Rain regime (convective/stratiform)</strong></td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Medium</strong></td>
+<td>Unlocks the 2.3 ceiling. Weak labels derivable from intermittency/duration.</td>
+</tr>
+<tr>
+<td><strong>Wind speed</strong></td>
+<td><strong><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span> Medium-hard</strong></td>
+<td>Needs ground truth. See 5.1. High reward.</td>
+</tr>
+<tr>
+<td>Rain inclination</td>
+<td><strong><span class="badge badge-paper" title="Published finding">PAPER</span> Demonstrated</strong> (Dunkerley 2025)</td>
+<td>Needs multi-mic.</td>
+</tr>
+<tr>
+<td>DSD (27 classes)</td>
+<td><strong><span class="badge badge-paper" title="Published finding">PAPER</span> Commercial</strong> (RHD); <strong><span class="badge badge-paper" title="Published finding">PAPER</span> inverted underwater</strong> (Nystuen)</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Hard in air</strong> — no Minnaert basis functions (2.1). Would need an empirical basis via co-deployed disdrometer. Stretch goal.</td>
+</tr>
+<tr>
+<td>Kinetic energy / erosivity</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Easier than intensity</strong></td>
+<td>KE ∝ acoustic energy more <em>directly</em> than rain rate does (Liu 2021) — fewer DSD moments in between. <strong>Underrated: we may be better at KE than at mm/h, and soil-erosion modelers want KE.</strong> A genuine niche where the physics favors us.</td>
+</tr>
+<tr>
+<td>Hail</td>
+<td><strong><span class="badge badge-paper" title="Published finding">PAPER</span> Commercial</strong> (RHD counts to 5 impacts/s)</td>
+<td>Acoustically very distinct. Easy win, no local data.</td>
+</tr>
+<tr>
+<td>Gauge fault detection</td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> Immediate, zero new work</strong></td>
+<td>Mic hears rain + bucket reports zero ⇒ maintenance flag. Uses the classifier we already have, at the accuracy it already has. <strong>Deployable today.</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> Note the pattern: <strong>several of these are easier than what we're currently optimizing.</strong> Onset detection, gauge-fault flagging, hail, and kinetic energy are all more tractable than per-clip mm/h — and arguably more useful. Per-clip intensity is the hardest target we could have picked, and it's the one we've been judged on.</p>
+<hr />
+<h2 id="9-novel-research-opportunities">9. Novel Research Opportunities<a class="headerlink" href="#9-novel-research-opportunities" title="Permanent link">¶</a></h2>
+<p>Consolidated, deduplicated, each traceable to a gap above.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Idea</th>
+<th>Origin</th>
+<th>Novelty</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N1</td>
+<td><strong>Integration-time scaling analysis</strong></td>
+<td>Xavier 0.62→0.85; Joss; Lee <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Low novelty, <strong>huge information value</strong></td>
+</tr>
+<tr>
+<td>N2</td>
+<td><strong>Leave-one-campaign-out CV</strong></td>
+<td>Xavier's transfer concern + our unique 19-campaign data</td>
+<td><strong>High</strong> — nobody can run this but us</td>
+</tr>
+<tr>
+<td>N3</td>
+<td><strong>Regime-conditioned mixture-of-experts</strong></td>
+<td>Lee &amp; Zawadzki 41%→7% <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong>High</strong> — literature-mandated, unattempted</td>
+</tr>
+<tr>
+<td>N4</td>
+<td><strong>Wind estimated from the same audio (multi-task)</strong></td>
+<td>Ma &amp; Nystuen + Dunkerley <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong>Very high</strong> — patentable</td>
+</tr>
+<tr>
+<td>N5</td>
+<td><strong>Wind-corrected labels, not wind features</strong></td>
+<td>Kochendorfer + Habib <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong>; explains Monti's null</td>
+<td><strong>High</strong></td>
+</tr>
+<tr>
+<td>N6</td>
+<td><strong>Per-campaign dry-ambient calibration</strong></td>
+<td>Ma &amp; Nystuen self-calibration <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Medium-high</td>
+</tr>
+<tr>
+<td>N7</td>
+<td><strong>Spectral kurtosis + modulation spectrum</strong></td>
+<td>First-principles</td>
+<td>Medium — absent from the entire library</td>
+</tr>
+<tr>
+<td>N8</td>
+<td><strong>Physics-band feature set (0–797, 1641–2719 Hz)</strong></td>
+<td>Xavier + our SHAP <strong><span class="badge badge-derived" title="Derived from published data">DERIVED</span></strong></td>
+<td>Low novelty, <strong>very high value/cost</strong></td>
+</tr>
+<tr>
+<td>N9</td>
+<td><strong>Run our pipeline on public SARID</strong></td>
+<td>Fair-comparison necessity</td>
+<td>Low novelty, <strong>decisive for credibility</strong></td>
+</tr>
+<tr>
+<td>N10</td>
+<td><strong>Two-mic coherence for wind rejection</strong></td>
+<td>Array processing</td>
+<td><strong>High</strong> for rain acoustics</td>
+</tr>
+<tr>
+<td>N11</td>
+<td><strong>Standardized sensing surface</strong></td>
+<td>RHD + our 2.1 analysis</td>
+<td>Medium — engineering, big payoff</td>
+</tr>
+<tr>
+<td>N12</td>
+<td><strong>Foundation-model embeddings, tasks measured separately</strong></td>
+<td>BEATs/CLAP + our 1.3 constraint</td>
+<td>Medium — the <em>asymmetry</em> is the finding</td>
+</tr>
+<tr>
+<td>N13</td>
+<td><strong>Surface-wetness hysteresis feature</strong></td>
+<td>Water-film damping physics</td>
+<td><strong>High</strong> — nobody models it; free from our timestamps</td>
+</tr>
+<tr>
+<td>N14</td>
+<td><strong>Accelerometer/piezo fusion</strong></td>
+<td>lokalRAIN's independent choice <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>Medium — validated by convergence</td>
+</tr>
+<tr>
+<td>N15</td>
+<td><strong>Kinetic-energy / erosivity as primary target</strong></td>
+<td>Liu 2021 <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td><strong>High</strong> — physics favors us; unserved audience</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="the-gap-this-project-is-uniquely-positioned-to-close">The gap this project is uniquely positioned to close<a class="headerlink" href="#the-gap-this-project-is-uniquely-positioned-to-close" title="Permanent link">¶</a></h3>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> Every published acoustic-rainfall result — SARID, Monti, Xavier, Avanzato — is trained and tested on <strong>one site</strong>, or at most two nearby ones. The field has <strong>no cross-deployment generalization benchmark</strong>, and it cannot build one, because nobody else has multi-campaign, multi-year, realistically-imbalanced, gauge-paired field audio.</p>
+<p><strong>We do.</strong> 19 campaigns, 2.5 years, 780,725 clips, 85/15 imbalance.</p>
+<p><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></strong> The most valuable contribution this project can make to the literature is <strong>not</strong> beating 0.787 on SARID. It is <strong>N2 + N1 + N9 together</strong>: publishing the first honest measurement of <em>how much accuracy an acoustic rain gauge loses when it moves</em>, at <em>the integration times operations actually use</em>, and calibrating that against the public benchmark so the numbers are comparable. That is a contribution no other group can currently make, it reframes our "lower" R² as the <em>point</em> rather than a shortfall, and it is squarely what Monti &amp; Ntalampiras's own future-work section asks for.</p>
+<hr />
+<h2 id="10-cross-paper-knowledge-graph">10. Cross-Paper Knowledge Graph<a class="headerlink" href="#10-cross-paper-knowledge-graph" title="Permanent link">¶</a></h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart TD
+    subgraph PHYS[&quot;RAIN PHYSICS&quot;]
+        DSD[&quot;Drop Size Distribution&lt;br/&gt;Joss 1969 · Lee 2005&quot;]
+        KE[&quot;Kinetic energy ∝ D³v²&lt;br/&gt;Liu 2021&quot;]
+        BUB[&quot;Bubble resonance f₀≈3.28/a kHz&lt;br/&gt;Nystuen 1996 — UNDERWATER ONLY&quot;]
+        SURF[&quot;Surface modal response&lt;br/&gt;OUR actual transfer function&quot;]
+        WIND[&quot;Wind: inclination + masking&lt;br/&gt;Dunkerley · Pensieri · Kochendorfer&quot;]
+    end
+
+    subgraph DSP[&quot;SIGNAL PROCESSING&quot;]
+        PSD[&quot;Welch PSD&lt;br/&gt;stationary · transferable · cheap&quot;]
+        BANDS[&quot;EVIDENCE-BACKED BANDS&lt;br/&gt;0–797 Hz → amount&lt;br/&gt;1641–2719 Hz → detection&quot;]
+        TRANS[&quot;Transient features&lt;br/&gt;kurtosis · flux · onsets&quot;]
+    end
+
+    subgraph FEAT[&quot;FEATURES&quot;]
+        MFCC[&quot;MFCC time-series (40×157)&quot;]
+        MEL[&quot;Dense mel bands — our SHAP winners&quot;]
+        MISS[&quot;MISSING: band PSD · kurtosis&lt;br/&gt;modulation · entropy&quot;]
+    end
+
+    subgraph ML[&quot;MODELS&quot;]
+        RF[&quot;PSD + RF&lt;br/&gt;Xavier: hourly R²&gt;0.85, cross-site&quot;]
+        TFM[&quot;MFCC + Transformer&lt;br/&gt;SARID 0.765 · Monti 0.787&quot;]
+        STACK[&quot;Learned stack — OURS 0.5429&lt;br/&gt;implicit regime-conditioning?&quot;]
+        MOE[&quot;PROPOSED: explicit regime MoE&lt;br/&gt;Lee: 41% → 7%&quot;]
+    end
+
+    subgraph DEPLOY[&quot;DEPLOYMENT&quot;]
+        T1[&quot;T1: on-device band features&lt;br/&gt;ESP32-S3 + INMP441 — BUILT&quot;]
+        LORA[&quot;LoRaWAN ~50B payload&lt;br/&gt;forces T1 architecture&quot;]
+        RHD[&quot;Engineered surface&lt;br/&gt;RHD: ±15% commercial bar&quot;]
+    end
+
+    subgraph APP[&quot;APPLICATIONS&quot;]
+        HOUR[&quot;Hourly accumulation&lt;br/&gt;the metric users want&quot;]
+        ONSET[&quot;Onset → flood warning&quot;]
+        FAULT[&quot;Gauge fault detection&lt;br/&gt;DEPLOYABLE TODAY&quot;]
+        EROS[&quot;Kinetic energy / erosivity&lt;br/&gt;physics favors us&quot;]
+    end
+
+    DSD --&gt;|&quot;41% irreducible error&lt;br/&gt;unless regime known&quot;| MOE
+    DSD --&gt; KE --&gt; PSD
+    BUB -.-&gt;|&quot;does NOT apply in air&quot;| SURF
+    SURF --&gt;|&quot;site-specific ⇒&lt;br/&gt;low band may not transfer&quot;| BANDS
+    WIND --&gt;|&quot;multiplicative, not additive&lt;br/&gt;⇒ Monti's null result&quot;| MOE
+    WIND --&gt;|&quot;corrupts LABEL too&quot;| RF
+
+    PSD --&gt; BANDS
+    BANDS --&gt;|&quot;3-way convergence:&lt;br/&gt;Xavier + Monti + our SHAP&quot;| MEL
+    BANDS --&gt; MISS
+    TRANS --&gt; MISS
+    MISS -.-&gt;|proposed| STACK
+
+    MEL --&gt; RF
+    MFCC --&gt; TFM
+    RF --&gt; STACK
+    TFM --&gt; STACK
+    STACK --&gt;|&quot;make implicit → explicit&quot;| MOE
+
+    BANDS --&gt;|&quot;2 scalars, ~1000× less bandwidth&quot;| T1
+    LORA --&gt; T1
+    RHD --&gt;|&quot;transfer fn = constant&lt;br/&gt;not per-campaign random effect&quot;| SURF
+
+    RF --&gt;|&quot;integration time:&lt;br/&gt;0.62 → 0.85&quot;| HOUR
+    STACK --&gt; HOUR
+    STACK --&gt; ONSET
+    STACK --&gt; FAULT
+    KE --&gt;|&quot;fewer DSD moments&lt;br/&gt;than mm/h&quot;| EROS
+
+    style BANDS fill:#2d6a4f,color:#fff
+    style MOE fill:#7d4f00,color:#fff
+    style HOUR fill:#1d3557,color:#fff
+    style SURF fill:#6a040f,color:#fff
+</pre></div>
+<p><strong>Reading the graph.</strong> The four highlighted nodes are where this analysis says the leverage is: <strong>BANDS</strong> (three independent lines of evidence agree, and we weren't using it), <strong>SURF</strong> (our real transfer function, unrecognized until now), <strong>MOE</strong> (the literature-quantified escape from the DSD ceiling), and <strong>HOUR</strong> (very likely the metric that reframes our headline number).</p>
+<hr />
+<h2 id="11-comparison-tables">11. Comparison Tables<a class="headerlink" href="#11-comparison-tables" title="Permanent link">¶</a></h2>
+<h3 id="111-feature-families">11.1 Feature families<a class="headerlink" href="#111-feature-families" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Dim</th>
+<th>Compute (10 s @ 8 kHz)</th>
+<th>Wind-robust</th>
+<th>Transfers?</th>
+<th>ESP32</th>
+<th>Our SHAP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Band PSD (2 bands)</td>
+<td>2</td>
+<td>~1 ms</td>
+<td>Ratio: yes</td>
+<td><strong>Best evidence</strong></td>
+<td>✅</td>
+<td><strong>untested</strong></td>
+</tr>
+<tr>
+<td>Dense mel means</td>
+<td>40</td>
+<td>~8 ms</td>
+<td>Mixed</td>
+<td>Band-dependent</td>
+<td>⚠️</td>
+<td><strong>top</strong></td>
+</tr>
+<tr>
+<td>MFCC means</td>
+<td>13</td>
+<td>~10 ms</td>
+<td>Moderate</td>
+<td>Moderate</td>
+<td>⚠️</td>
+<td>high</td>
+</tr>
+<tr>
+<td>MFCC series</td>
+<td>6280</td>
+<td>~10 ms</td>
+<td>Moderate</td>
+<td>Unknown</td>
+<td>❌</td>
+<td>n/a (DL)</td>
+</tr>
+<tr>
+<td>Time-domain</td>
+<td>~15</td>
+<td>&lt;1 ms</td>
+<td>Poor</td>
+<td>Gain-dependent</td>
+<td>✅</td>
+<td>moderate</td>
+</tr>
+<tr>
+<td>Wavelet</td>
+<td>~20</td>
+<td>~15 ms</td>
+<td>Moderate</td>
+<td>Unknown</td>
+<td>⚠️</td>
+<td>moderate</td>
+</tr>
+<tr>
+<td><strong>Kurtosis/modulation</strong></td>
+<td>~10</td>
+<td>~2 ms</td>
+<td><strong>Best</strong></td>
+<td><strong><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span> good</strong></td>
+<td>✅</td>
+<td><strong>untested</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="112-models">11.2 Models<a class="headerlink" href="#112-models" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Best R²</th>
+<th>Params</th>
+<th>Interpretable</th>
+<th>Edge</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PSD + RF (Xavier)</td>
+<td>0.62→<strong>0.85 hourly</strong></td>
+<td>~10⁵</td>
+<td>✅</td>
+<td>✅</td>
+<td><strong>Cross-site validated</strong></td>
+</tr>
+<tr>
+<td>XGBoost (ours, 30 SHAP)</td>
+<td>0.226 <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>~10⁵</td>
+<td>✅</td>
+<td>✅</td>
+<td>Deployment track</td>
+</tr>
+<tr>
+<td>CNN (ours)</td>
+<td>0.277 <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>~10⁶</td>
+<td>❌</td>
+<td>⚠️</td>
+<td></td>
+</tr>
+<tr>
+<td>Transformer (ours)</td>
+<td>0.268 full / 0.347 pilot <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>~10⁶</td>
+<td>❌</td>
+<td>❌</td>
+<td><strong>Degrades at scale</strong></td>
+</tr>
+<tr>
+<td>Transformer (SARID)</td>
+<td>0.765 <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>~10⁶</td>
+<td>❌</td>
+<td>❌</td>
+<td>Curated data</td>
+</tr>
+<tr>
+<td>Stacked transformers (Monti)</td>
+<td>0.787 <strong><span class="badge badge-paper" title="Published finding">PAPER</span></strong></td>
+<td>~10⁷</td>
+<td>❌</td>
+<td>❌</td>
+<td>SOTA; saturating</td>
+</tr>
+<tr>
+<td><strong>Stack (ours)</strong></td>
+<td><strong>0.5429</strong> <strong><span class="badge badge-measured" title="Measured on this project">MEASURED</span></strong></td>
+<td>~10⁶</td>
+<td>⚠️</td>
+<td>❌</td>
+<td><strong>Field data, both tasks</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="113-benchmarks--read-the-conditions-not-just-the-number">11.3 Benchmarks — read the conditions, not just the number<a class="headerlink" href="#113-benchmarks--read-the-conditions-not-just-the-number" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>System</th>
+<th>Score</th>
+<th>Clips</th>
+<th>Rain-only?</th>
+<th>Sites</th>
+<th>Honest?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SARID</td>
+<td>R² 0.765</td>
+<td>12,066 × 4 s</td>
+<td><strong>Yes</strong></td>
+<td>1</td>
+<td>Curated</td>
+</tr>
+<tr>
+<td>Monti</td>
+<td>R² 0.787</td>
+<td>same</td>
+<td><strong>Yes</strong></td>
+<td>1</td>
+<td>Same benchmark</td>
+</tr>
+<tr>
+<td>Xavier (1 min)</td>
+<td>R² 0.62</td>
+<td>~57k × 1 min</td>
+<td>No</td>
+<td>3</td>
+<td><strong>Cross-site</strong></td>
+</tr>
+<tr>
+<td>Xavier (hourly)</td>
+<td><strong>R² &gt;0.85</strong></td>
+<td>"</td>
+<td>No</td>
+<td>3</td>
+<td><strong>Cross-site</strong></td>
+</tr>
+<tr>
+<td>2026 optical+acoustic</td>
+<td>99.88% sim → <strong>70.56% real night</strong></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><strong>Self-refuting; instructive</strong></td>
+</tr>
+<tr>
+<td>RHD (commercial)</td>
+<td><strong>±15% intensity</strong></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>The bar to beat</td>
+</tr>
+<tr>
+<td><strong>This project</strong></td>
+<td><strong>R² 0.5429</strong></td>
+<td><strong>780,725 × 10 s</strong></td>
+<td><strong>No (85% dry)</strong></td>
+<td><strong>19 campaigns</strong></td>
+<td><strong>Hardest conditions in the table</strong></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="12-future-roadmap">12. Future Roadmap<a class="headerlink" href="#12-future-roadmap" title="Permanent link">¶</a></h2>
+<p>Moved to <a href="roadmap.html">ROADMAP.md</a> so it stays maintainable as a live document.</p>
+<hr />
+<h2 id="13-ranked-research-directions">13. Ranked Research Directions<a class="headerlink" href="#13-ranked-research-directions" title="Permanent link">¶</a></h2>
+<p>Scores 1–5. <strong>Overall</strong> weights value-per-unit-effort and evidence strength, not novelty alone.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Direction</th>
+<th>Novelty</th>
+<th>Feasib.</th>
+<th>Δ Accuracy</th>
+<th>Edge</th>
+<th>Cost</th>
+<th>Publish</th>
+<th>Patent</th>
+<th>Commercial</th>
+<th><strong>Overall</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>N1</strong></td>
+<td><strong>Integration-time scaling</strong></td>
+<td>2</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td>5</td>
+<td><strong>5</strong></td>
+<td>4</td>
+<td>1</td>
+<td>4</td>
+<td><strong>★★★★★</strong></td>
+</tr>
+<tr>
+<td><strong>N8</strong></td>
+<td><strong>Physics-band features</strong></td>
+<td>2</td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td>1</td>
+<td>4</td>
+<td><strong>★★★★★</strong></td>
+</tr>
+<tr>
+<td><strong>N2</strong></td>
+<td><strong>Leave-one-campaign-out CV</strong></td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td>1*</td>
+<td>3</td>
+<td>4</td>
+<td><strong>5</strong></td>
+<td>1</td>
+<td>4</td>
+<td><strong>★★★★★</strong></td>
+</tr>
+<tr>
+<td><strong>N9</strong></td>
+<td><strong>Our pipeline on SARID</strong></td>
+<td>2</td>
+<td>4</td>
+<td>1*</td>
+<td>3</td>
+<td>4</td>
+<td><strong>5</strong></td>
+<td>1</td>
+<td>3</td>
+<td><strong>★★★★★</strong></td>
+</tr>
+<tr>
+<td><strong>N3</strong></td>
+<td><strong>Regime-conditioned MoE</strong></td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td><strong>4</strong></td>
+<td>2</td>
+<td>3</td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td>3</td>
+<td><strong>★★★★☆</strong></td>
+</tr>
+<tr>
+<td><strong>N6</strong></td>
+<td>Dry-ambient calibration</td>
+<td>4</td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td>4</td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td>2</td>
+<td>4</td>
+<td><strong>★★★★☆</strong></td>
+</tr>
+<tr>
+<td><strong>N7</strong></td>
+<td>Kurtosis + modulation</td>
+<td>3</td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td>3</td>
+<td>2</td>
+<td>4</td>
+<td><strong>★★★★☆</strong></td>
+</tr>
+<tr>
+<td><strong>N5</strong></td>
+<td>Wind-corrected labels</td>
+<td>4</td>
+<td>2†</td>
+<td>4</td>
+<td>4</td>
+<td>3</td>
+<td>4</td>
+<td>2</td>
+<td>3</td>
+<td><strong>★★★★☆</strong></td>
+</tr>
+<tr>
+<td><strong>N13</strong></td>
+<td>Surface-wetness hysteresis</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td>2</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td><strong>★★★★☆</strong></td>
+</tr>
+<tr>
+<td><strong>N4</strong></td>
+<td><strong>Wind from audio (multi-task)</strong></td>
+<td><strong>5</strong></td>
+<td>2†</td>
+<td>4</td>
+<td>4</td>
+<td>2</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td><strong>★★★★☆</strong></td>
+</tr>
+<tr>
+<td><strong>N11</strong></td>
+<td>Standardized surface</td>
+<td>3</td>
+<td>3</td>
+<td>4</td>
+<td><strong>5</strong></td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td><strong>5</strong></td>
+<td><strong>★★★★☆</strong></td>
+</tr>
+<tr>
+<td><strong>N12</strong></td>
+<td>Foundation embeddings</td>
+<td>3</td>
+<td>4</td>
+<td>3</td>
+<td>1</td>
+<td>3</td>
+<td>4</td>
+<td>1</td>
+<td>2</td>
+<td><strong>★★★☆☆</strong></td>
+</tr>
+<tr>
+<td><strong>N15</strong></td>
+<td>Kinetic energy target</td>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td>4</td>
+<td>3</td>
+<td>4</td>
+<td>2</td>
+<td>3</td>
+<td><strong>★★★☆☆</strong></td>
+</tr>
+<tr>
+<td><strong>N10</strong></td>
+<td>Two-mic coherence</td>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td>4</td>
+<td>2</td>
+<td>4</td>
+<td>4</td>
+<td>4</td>
+<td><strong>★★★☆☆</strong></td>
+</tr>
+<tr>
+<td><strong>N14</strong></td>
+<td>Accel/piezo fusion</td>
+<td>3</td>
+<td>3</td>
+<td>3</td>
+<td>4</td>
+<td>2</td>
+<td>3</td>
+<td>3</td>
+<td>4</td>
+<td><strong>★★★☆☆</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>* N2/N9 score 1 on Δ-accuracy because they don't <em>improve</em> the model — they tell us <strong>what our number actually means</strong>. That is worth more than a small R² gain, which is why they rank at the top anyway.
+† N4/N5 are gated on recording wind data. Their feasibility rises to 4 the moment an anemometer is deployed — <strong>which is why deploying one is urgent and cheap.</strong></p>
+<h3 id="if-you-only-do-three-things">If you only do three things<a class="headerlink" href="#if-you-only-do-three-things" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>N1 — integration-time analysis.</strong> Hours of pandas, no retraining. It may reveal that the project's headline metric has been understating the instrument this whole time. Nothing else has this payoff-to-cost ratio.</li>
+<li><strong>N2 — leave-one-campaign-out CV.</strong> Compute only. Produces the one number no other group in this field can produce, and it's the number a real deployment depends on.</li>
+<li><strong>Deploy an anemometer on the next campaign.</strong> Not analysis — <em>data collection</em>. It gates N4 and N5, the two highest-ceiling ideas here, and every month without it is a month those stay untestable.</li>
+</ol>
+<hr />
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">¶</a></h2>
+<p>New literature consulted for this analysis (beyond the local 172-paper library catalogued in <a href="research_paper_analysis.html">RESEARCH_PAPER_ANALYSIS.md</a>):</p>
+<ul>
+<li><a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024GL108210">Xavier et al. (2024), <em>Measuring Amazon Rainfall Intensity With Sound Recorders</em>, Geophysical Research Letters 51, e2024GL108210</a> — full text read locally; the PSD/band/integration-time source.</li>
+<li><a href="https://www.idmt.fraunhofer.de/en/institute/projects-products/projects/lokalrain-rain-measurement-aoustic-sensors.html">Fraunhofer IDMT — lokalRAIN project (Oct 2024 – Jun 2026)</a> — vibration-sensor-based acoustic rain sensing.</li>
+<li><a href="https://openiot.in/index.php/2025/01/03/edge-analytics-based-acoustic-rain-gauge/">OpenIoT — Edge Analytics based Acoustic Rain Gauge (Jan 2025)</a> — Raspberry Pi + LoRaWAN reference deployment.</li>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0022169425012594">A deep learning pipeline for rainfall estimation from surveillance audio, J. Hydrology 668:135045 (2026)</a> — RD-UNet denoising (abstract only; publisher blocks fetch).</li>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S002216942500633X">Estimating rainfall intensity from surveillance audio: a hybrid model-data-driven framework, J. Hydrology (2025)</a> — physics+DL hybrid (abstract only).</li>
+<li><a href="https://www.iahr.org/library/infor?pid=37845">Rainfall Intensity Measurement Using Deep Learning with Optical and Acoustic Sensors (IAHR, 2026)</a> — the 99.88% sim → 70.56% real-night result.</li>
+<li><a href="https://proceedings.mlr.press/v202/chen23ag/chen23ag.pdf">Chen et al. (2023), <em>BEATs: Audio Pre-Training with Acoustic Tokenizers</em>, ICML</a> — foundation-model candidate.</li>
+<li><a href="https://github.com/cksajil/rainfall_monitor">cksajil/rainfall_monitor (ICFOSS)</a> — already vendored in <code>external_repos/</code>.</li>
+</ul>
+<hr />
+<p><em>Compiled 2026-07-16. Every </em><em><span class="badge badge-measured" title="Measured on this project">MEASURED</span></em><em> claim cites a file in this repository; every </em><em><span class="badge badge-paper" title="Published finding">PAPER</span></em><em> claim cites a source above or in the library analysis; every </em><em><span class="badge badge-derived" title="Derived from published data">DERIVED</span></em><em> claim is reproducible from the stated configuration; </em><em><span class="badge badge-inference" title="Reasoned inference">INFERENCE</span></em><em> and </em><em><span class="badge badge-proposal" title="Proposed direction">PROPOSAL</span></em><em> are argument and should be read as such.</em></p></main>
+</div>
+<footer>Acoustic Rain Gauge · generated from <a href="../DEEP_RESEARCH_ANALYSIS.md">DEEP_RESEARCH_ANALYSIS.md</a> · source of truth is the Markdown file</footer>
+<button id="topBtn" title="Back to top">↑</button>
+<script>
+(function () {
+  const root = document.documentElement;
+  const stored = localStorage.getItem('arg-docs-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const apply = (t) => {
+    root.setAttribute('data-theme', t);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  };
+  apply(stored || (prefersDark ? 'dark' : 'light'));
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('arg-docs-theme', next);
+    apply(next);
+    if (window.rerenderMermaid) window.rerenderMermaid(next);
+  });
+
+  const bar = document.getElementById('progress');
+  const topBtn = document.getElementById('topBtn');
+  addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    if (bar) bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    if (topBtn) topBtn.classList.toggle('show', h.scrollTop > 600);
+  }, { passive: true });
+  if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // scroll-spy for the TOC
+  const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+  if (links.length) {
+    const map = new Map();
+    links.forEach(a => {
+      const el = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+      if (el) map.set(el, a);
+    });
+    let current = null;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          if (current) current.classList.remove('active');
+          current = map.get(e.target);
+          if (current) {
+            current.classList.add('active');
+            current.scrollIntoView({ block: 'nearest' });
+          }
+        }
+      });
+    }, { rootMargin: '-70px 0px -70% 0px' });
+    map.forEach((_, el) => obs.observe(el));
+  }
+})();
+</script>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  const srcs = new Map();
+  document.querySelectorAll('.mermaid').forEach((el, i) => srcs.set(el, el.textContent));
+  const render = (theme) => {
+    srcs.forEach((src, el) => {
+      el.removeAttribute('data-processed');
+      el.textContent = src;
+    });
+    mermaid.initialize({ startOnLoad: false, theme: theme === 'dark' ? 'dark' : 'neutral' });
+    mermaid.run();
+  };
+  window.rerenderMermaid = render;
+  render(document.documentElement.getAttribute('data-theme'));
+</script>
+
+</body>
+</html>

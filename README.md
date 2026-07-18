@@ -6,10 +6,13 @@ This project trains a machine learning model to estimate rainfall — whether it
 
 <p align="left">
   <img src="https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/status-Stage%208%20complete%20(AUC%200.887%2C%20R²%200.226)-brightgreen" alt="Status">
+  <img src="https://img.shields.io/badge/status-Stage%2010%20(AUC%200.887%2C%20R²%200.5429)-brightgreen" alt="Status">
   <img src="https://img.shields.io/badge/dataset-780%2C725%20audio%20clips-orange" alt="Dataset size">
   <img src="https://img.shields.io/badge/span-Dec%202023%20→%20Jun%202026-lightgrey" alt="Time span">
+  <img src="https://img.shields.io/badge/edge-XIAO%20ESP32--S3%20%2B%20INMP441-blueviolet" alt="Edge hardware">
 </p>
+
+> **📚 Research docs:** [Deep Research Analysis](docs/DEEP_RESEARCH_ANALYSIS.md) (hidden inferences, physics, ranked directions) · [Roadmap](docs/ROADMAP.md) · [Paper library analysis](docs/RESEARCH_PAPER_ANALYSIS.md) (172 papers) · [Project Handbook](docs/PROJECT_HANDBOOK.md)
 
 ---
 
@@ -31,7 +34,10 @@ If it works, a microphone becomes a low-maintenance, potentially higher-resoluti
    └─────────────────────────────────────────┘
                         │
                         ▼
-              🧠  ML model (XGBoost)
+        🧠  XGBoost · CNN · LSTM · Transformer
+                        │
+                        ▼
+           🎯  learned stacking ensemble
                         │
                         ▼
         "it's raining, ~X mm in this interval"
@@ -130,34 +136,53 @@ Class imbalance (≈15% rainy) is expected — it doesn't rain most of the time 
 acoustic_rain_gauge_ml/
 │
 ├── src/
-│   ├── data_cleaning.py       # Main pipeline: alignment + CPU feature extraction
-│   ├── data_cleaning_gpu.py   # Experimental: batched GPU feature extraction
-│   ├── analyze_dataset_v2.py  # Recursive dataset structure/health report
-│   ├── dry_run_test.py        # Small-sample sanity check before a full run
-│   ├── feature_extraction.py  # Stage 3: duration-filter, per-campaign split, scaling
-│   ├── train_model.py         # Stage 4: XGBoost classifier + regressor training
-│   ├── evaluate_model.py      # Stage 5: threshold tuning, error analysis, light HP search
-│   ├── predict.py             # Stage 6: single-clip real-time inference
-│   ├── dl_dataset.py          # Stage 7: waveform Dataset + GPU-batched MFCC extractor
-│   ├── dl_models.py           # Stage 7: CNN/LSTM/Transformer regression heads
-│   ├── train_dl_model.py      # Stage 7: DL ablation training loop (pilot/full modes)
-│   ├── advanced_feature_extraction.py  # 63-feature pilot (superseded by master_feature_extraction.py)
-│   ├── master_feature_extraction.py    # Stage 8: 175-feature master store, parallel + resume-safe
-│   ├── feature_selection.py            # Stage 8: SHAP-ranked top-N feature selection
-│   └── utils.py               # (stub) shared helpers — TODO
+│   ├── features/
+│   │   ├── data_cleaning.py                # Stage 1: alignment + CPU feature extraction (production)
+│   │   ├── data_cleaning_gpu.py            # Experimental: batched GPU feature extraction
+│   │   ├── feature_extraction.py           # Stage 3: duration-filter, per-campaign split, scaling
+│   │   ├── master_feature_extraction.py    # Stage 8: 175-feature master store, parallel + resume-safe
+│   │   ├── feature_selection.py            # Stage 8: SHAP-ranked top-N selection (per target)
+│   │   └── advanced_feature_extraction.py  # 63-feature pilot (superseded — run one or the other)
+│   ├── dl/
+│   │   ├── dl_dataset.py                   # Stage 7: waveform Dataset + GPU-batched MFCC extractor
+│   │   └── dl_models.py                    # Stage 7: CNN/LSTM/Transformer regression heads
+│   ├── training/
+│   │   ├── train_model.py                  # Stage 4: XGBoost classifier + regressor
+│   │   ├── train_optimized_model.py        # Stage 8: SHAP-selected feature training
+│   │   ├── train_dl_model.py               # Stage 7: DL ablation loop (pilot/full)
+│   │   ├── ensemble_stack.py               # Stage 9: learned stacking meta-model (BEST, R²=0.5429)
+│   │   └── run_sweep.py                    # Stage 10: unattended overnight sweep orchestrator
+│   ├── evaluation/
+│   │   ├── evaluate_model.py               # Stage 5: threshold tuning, error analysis, HP search
+│   │   ├── analyze_dataset_v2.py           # Recursive dataset structure/health report
+│   │   └── diagnose_dl_stability.py        # DL full-scale instability diagnostic
+│   ├── inference/
+│   │   ├── predict.py                      # Stage 6: single-clip inference CLI (--ensemble supported)
+│   │   └── ensemble_predict.py             # Stage 9: base-model predictions + blend search
+│   └── utils.py                            # (stub) shared helpers — TODO
+│
+├── firmware/
+│   └── xiao_esp32s3_inmp441_test/          # Stage 11: ESP32-S3 + INMP441 I2S mic, PlatformIO
 │
 ├── data/
 │   ├── raw/                   # Original audio + tipping-bucket CSVs (kept off-repo)
-│   ├── processed/             # Cleaned, aligned, feature-extracted CSVs
+│   ├── processed/             # Cleaned, aligned, feature-extracted CSVs (train.csv / test.csv)
 │   └── external/              # Any external datasets or metadata
 │
 ├── docs/
-│   ├── dataset_analysis_report_v2.txt   # Full recursive dataset scan
-│   └── PROGRESS.md            # Stage 7 status: pilot results, next steps, key facts
+│   ├── DEEP_RESEARCH_ANALYSIS.md   # Hidden inferences, physics, ranked research directions
+│   ├── ROADMAP.md                  # Research-driven short/medium/long-term plan
+│   ├── RESEARCH_PAPER_ANALYSIS.md  # 172-paper library: identification + per-paper analysis
+│   ├── PROJECT_HANDBOOK.md         # Full technical/historical reference (19 sections)
+│   ├── PROGRESS.md                 # Running project log: results, bugs, next steps
+│   ├── reports/                    # Metric JSONs, plots, sweep progress
+│   └── NEW_PC_SETUP/               # Multi-machine / HDD-migration runbooks
 │
+├── ARG_Research/              # Literature library (172 PDFs) + paper-tracking tool
 ├── models/                    # Trained model artifacts + feature_scaler.pkl
 ├── notebooks/
 │   └── eda.ipynb              # Stage 2: combined-dataset exploration
+├── tests/dry_run_test.py      # Small-sample sanity check before a full run
 └── requirements.txt
 ```
 
@@ -214,7 +239,39 @@ acoustic_rain_gauge_ml/
   | Classifier | AUC-ROC | 0.883 | **0.887** |
   | Regressor | R² | 0.155 | **0.226** (+46% relative) |
 
-  See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the full feature lists, the duplicate-row data quirk found and fixed in `December_2024_rain_data`, and next steps (hurdle-model regressor, Stage 7 DL fusion).
+  See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the full feature lists and the duplicate-row data quirk found and fixed in `December_2024_rain_data`. (The two follow-ups this stage identified — a hurdle-model regressor and Stage 7 DL fusion — have both since been resolved in Stage 9: the fusion became the project's best result, and the hurdle model lost.)
+
+- [x] **Stage 9 — Ensembling & Stacking** ([`src/inference/ensemble_predict.py`](src/inference/ensemble_predict.py), [`src/training/ensemble_stack.py`](src/training/ensemble_stack.py)): the four model families (CNN, LSTM, Transformer, XGBoost) each top out around R² 0.22-0.28 individually, but they make *partially independent* mistakes — so combining them helps. A fixed 50/50 average already reached R² 0.314 and the best hand-tuned weighted blend 0.316; replacing the fixed blend with a **learned stacking meta-model** (a small XGBoost trained on the base models' predictions, 5-fold CV, tuned, then refreshed via an input-subset sweep) reached **R² = 0.5429** — the project's best result, ~2.4× the Stage 4 baseline and ~1.6× the best single model.
+
+  | Configuration | R² |
+  |---|---|
+  | CNN / LSTM / Transformer / XGBoost, alone | 0.277 / 0.220 / 0.268 / 0.226 |
+  | Simple 50/50 average blend | 0.314 |
+  | Best hand-tuned weighted blend | 0.316 |
+  | **Learned stacking meta-model (production)** | **0.5429** |
+
+  A **hurdle model** (gate on rain/no-rain, then regress) was tried twice and lost both times — hard-gate R² −0.097, soft-gate 0.076, vs 0.226 for a single always-on regressor. Worth recording so it isn't re-tried blindly. (But see the [Deep Research Analysis](docs/DEEP_RESEARCH_ANALYSIS.md#23-the-dsd-ceiling--why-a-single-regression-function-cannot-win): that result refutes gating on *rain/no-rain* specifically, **not** mixture-of-experts in general — the literature says the gate that matters is rain *regime*.)
+
+  ```bash
+  python src/inference/ensemble_predict.py   # base-model predictions + blend search
+  python src/training/ensemble_stack.py      # learned stacking meta-model (best result)
+  ```
+
+- [x] **Stage 10 — Automated Sweep Infrastructure** ([`src/training/run_sweep.py`](src/training/run_sweep.py)): a resume-safe, failure-tolerant orchestrator that runs unattended overnight experiment batches (DL hyperparameter grid × XGBoost configs × ensemble input-subset search) across three phases, writing incremental results to [`docs/reports/sweep_progress.json`](docs/reports/sweep_progress.json) so a crash mid-run loses one experiment rather than the night. It only promotes a new production ensemble when the candidate **measurably beats** the deployed one — which is how the current R² = 0.5429 stacker was found.
+
+- [x] **Stage 11 — Edge Hardware Bring-Up** ([`firmware/xiao_esp32s3_inmp441_test/`](firmware/xiao_esp32s3_inmp441_test/)): a PlatformIO project migrating acoustic sensing from the original analog electret + LM393 module to a **Seeed XIAO ESP32-S3 + INMP441 I2S MEMS microphone** — wiring/bring-up, WAV capture, live Wi-Fi audio streaming to the trained ensemble, and a dual-mic comparison mode to validate the sensor swap before retiring the analog module.
+
+  The migration matters more than it looks: the INMP441 is a *digital* mic with a stable, reproducible absolute sensitivity (−26 dBFS ±1 dB) across units. Since rainfall *amount* is encoded largely in **absolute acoustic level**, unit-to-unit gain consistency isn't a convenience here — it's a correctness requirement. An analog module's gain variation would masquerade as rainfall variation. (This is the same reasoning behind removing per-clip peak normalization in Stage 7 — see [Honest Notes](#-honest-notes).)
+
+---
+
+## 🔭 What's Next
+
+The full picture is in [**docs/ROADMAP.md**](docs/ROADMAP.md), driven by [**docs/DEEP_RESEARCH_ANALYSIS.md**](docs/DEEP_RESEARCH_ANALYSIS.md). The three highest-value next steps, in order:
+
+1. **Integration-time scaling analysis** — our R² is measured *per 10-second clip* against a *0.2 mm-per-tip* bucket. At 2 mm/h that's one tip every 6 minutes, so ~97% of light-rain clips carry a label that reflects where the tip boundary fell, not the rain in those 10 seconds. Xavier et al. (2024) got R² 0.62 → **0.85+** from the same model purely by aggregating to hourly. We have `timestamp` on every row and can test this with **no retraining**. Per-clip R² may have been understating this instrument all along.
+2. **Leave-one-campaign-out cross-validation** — train on 18 campaigns, test on the 19th, rotate. Every published result in this field (SARID, Monti, Xavier, Avanzato) is single-site. **Nobody else has the data to measure cross-deployment generalization. We do.** That's the contribution worth publishing.
+3. **Put an anemometer on the next campaign** — six papers in the library say wind is essential (Kochendorfer: unshielded gauges catch <50% above 5 m/s; Pensieri: 4 m/s erases drizzle's acoustic signature). We currently record **zero** wind data, which blocks the two highest-ceiling ideas in the analysis. This is data collection, not modeling — and every month without it is a month those stay untestable.
 
 ---
 
@@ -252,6 +309,12 @@ A few details worth knowing before building on top of this:
 - **Audio sample rate**: confirmed empirically (Stage 7 investigation) at **8000 Hz, mono, exactly 10.0s (80,000 samples)** across all 19 recording campaigns in the `10-15s`-duration training subset.
 - The GPU pipeline is a working, independent implementation, not a drop-in replacement yet — it hasn't been cross-validated feature-by-feature against the CPU pipeline's output.
 - **A handful of mechanical readings are sensor artifacts, not real rain.** 204 rows carry `rainfall_mm` ≈ 655.2–655.33 identically across unrelated recording campaigns (real readings top out at 21.6mm) — almost certainly a corrupted or overflowed counter. `feature_extraction.py` drops anything above 50mm before it reaches training; this originally produced a broken regressor (R² of **-0.045**, worse than predicting the mean) until caught by actually running the pipeline.
+
+- **8 kHz is *not* a limitation — this is now settled.** It read like one for most of this project's life. But two independent papers with 3–6× our bandwidth searched their *full* frequency range for rain signal and both landed inside ours: Xavier et al. (2024) found the only two windows correlating >0.6 with rainfall were **0–797 Hz** and **1641–2719 Hz**; Monti & Ntalampiras (2025) found rain information concentrated **below ~2 kHz**. Everything they care about sits under our 4 kHz Nyquist. See [Deep Research Analysis §0.1](docs/DEEP_RESEARCH_ANALYSIS.md#0-the-headline-finding-of-this-analysis).
+
+- **Detection and amount estimation live in different frequency bands** — and our own SHAP rankings found this before we understood it. Mapping the top-ranked mel bands to Hz at our config (8 kHz, 40 mels): the top **regression** features `mel_band_7/8` are **400–572 Hz**, while the top **classification** features `mel_band_27/36` are **1752–1971 Hz** and **2979–3352 Hz**. Those match Xavier's amount-window (0–797 Hz) and detection-window (1641–2719 Hz) respectively. This retroactively explains a Stage 8 finding that was logged as an ML-hygiene lesson: SHAP-ranking features against `rainfall_mm` and reusing that list for the classifier *hurt* AUC (0.842 vs 0.883), forcing the `--target` flag. That wasn't a methodology quirk — **it was physics.** The two tasks were asking about different parts of the spectrum.
+
+- **Per-clip peak normalization was removed because absolute level *is* the label.** Rain amount is encoded largely in absolute acoustic level; dividing every clip by its own maximum is precisely the operation that destroys it, mapping drizzle and downpour onto the same dynamic range. It's a habit imported from speech/music ML, where absolute level is a nuisance variable. Here it's the target. (The better alternative — per-campaign calibration against our 666k dry clips as an ambient reference, following Ma & Nystuen's self-calibration approach — is [proposed but not yet implemented](docs/ROADMAP.md).)
 
 ---
 

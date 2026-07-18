@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap — Acoustic Rain Gauge · Acoustic Rain Gauge</title>
+<style>
+:root {
+  --hue: 330;
+  --bg: #f6f7fb;
+  --bg-card: #ffffff;
+  --bg-code: #eef0f6;
+  --ink: #1b2030;
+  --ink-soft: #4a5268;
+  --ink-faint: #7b8399;
+  --line: #e2e5ef;
+  --accent: hsl(var(--hue), 70%, 46%);
+  --accent-soft: hsl(var(--hue), 75%, 95%);
+  --accent-ink: hsl(var(--hue), 60%, 32%);
+  --shadow: 0 1px 3px rgba(20, 25, 45, .07), 0 8px 24px rgba(20, 25, 45, .06);
+  --radius: 14px;
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  --bg: #0e1118;
+  --bg-card: #161b26;
+  --bg-code: #1d2331;
+  --ink: #e8eaf2;
+  --ink-soft: #aab2c5;
+  --ink-faint: #6f7890;
+  --line: #262d3d;
+  --accent: hsl(var(--hue), 75%, 62%);
+  --accent-soft: hsl(var(--hue), 45%, 17%);
+  --accent-ink: hsl(var(--hue), 80%, 74%);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: 16px;
+  transition: background .25s ease, color .25s ease;
+}
+
+/* ---- progress bar ---- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, hsl(var(--hue),80%,55%), hsl(calc(var(--hue) + 60),80%,60%));
+  z-index: 100; transition: width .1s linear;
+}
+
+/* ---- header ---- */
+.site-header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 22px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.site-header .home {
+  font-weight: 700; text-decoration: none; color: var(--ink);
+  display: flex; align-items: center; gap: 8px; font-size: .95rem;
+  white-space: nowrap;
+}
+.site-header .home .dot {
+  width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  background: linear-gradient(135deg, hsl(var(--hue),75%,55%), hsl(calc(var(--hue) + 50),75%,60%));
+  font-size: 14px;
+}
+.doc-nav { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; }
+.doc-nav a {
+  text-decoration: none; color: var(--ink-soft); font-size: .82rem;
+  padding: 6px 11px; border-radius: 9px; white-space: nowrap;
+}
+.doc-nav a:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.doc-nav a.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+#themeBtn {
+  border: 1px solid var(--line); background: var(--bg-card); color: var(--ink);
+  border-radius: 9px; padding: 5px 11px; cursor: pointer; font-size: .95rem;
+  flex-shrink: 0;
+}
+#themeBtn:hover { border-color: var(--accent); }
+
+/* ---- hero ---- */
+.hero {
+  padding: 54px 26px 40px;
+  background:
+    radial-gradient(1100px 420px at 12% -10%, hsla(var(--hue), 80%, 60%, .16), transparent 60%),
+    radial-gradient(900px 380px at 88% -20%, hsla(calc(var(--hue) + 70), 80%, 60%, .12), transparent 60%);
+  border-bottom: 1px solid var(--line);
+}
+.hero-inner { max-width: 1160px; margin: 0 auto; }
+.hero .emoji { font-size: 2.4rem; }
+.hero h1 {
+  margin: 10px 0 8px; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.15;
+  letter-spacing: -.02em;
+  background: linear-gradient(100deg, var(--ink) 30%, hsl(var(--hue), 70%, 55%));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero .tagline { color: var(--ink-soft); max-width: 68ch; margin: 0 0 18px; font-size: 1.02rem; }
+.meta-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: .76rem; padding: 4px 12px; border-radius: 999px;
+  background: var(--bg-card); border: 1px solid var(--line); color: var(--ink-soft);
+  box-shadow: var(--shadow);
+}
+
+/* ---- layout ---- */
+.layout {
+  max-width: 1160px; margin: 0 auto; padding: 30px 26px 90px;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px;
+  align-items: start;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } .sidebar { display: none; } }
+
+/* ---- sidebar TOC ---- */
+.sidebar { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto; padding-right: 4px; }
+.sidebar h4 {
+  margin: 4px 0 10px; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc > ul > li > ul { padding-left: 14px; }
+.toc ul ul ul { display: none; }               /* cap depth shown */
+.toc a {
+  display: block; padding: 4px 10px; margin: 1px 0; border-left: 2px solid transparent;
+  color: var(--ink-soft); text-decoration: none; font-size: .82rem; line-height: 1.35;
+  border-radius: 0 7px 7px 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.toc a:hover { color: var(--accent-ink); background: var(--accent-soft); }
+.toc a.active { color: var(--accent-ink); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* ---- article ---- */
+.article { min-width: 0; }
+.article h1, .article h2, .article h3, .article h4 { letter-spacing: -.015em; line-height: 1.25; scroll-margin-top: 84px; }
+.article h1 { font-size: 1.75rem; margin: 2.2em 0 .6em; }
+.article h2 {
+  font-size: 1.42rem; margin: 2.4em 0 .7em; padding-bottom: .35em;
+  border-bottom: 2px solid var(--line); position: relative;
+}
+.article h2::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 64px; height: 2px;
+  background: linear-gradient(90deg, hsl(var(--hue),75%,55%), transparent);
+}
+.article h3 { font-size: 1.13rem; margin: 1.9em 0 .5em; }
+.article h4 { font-size: 1rem; margin: 1.6em 0 .4em; color: var(--ink-soft); }
+.article > :first-child { margin-top: 0; }
+.article p { margin: .85em 0; }
+.article a { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid transparent; }
+.article a:hover { border-bottom-color: var(--accent-ink); }
+.article strong { color: var(--ink); }
+.article hr { border: none; border-top: 1px solid var(--line); margin: 2.6em 0; }
+.article ul, .article ol { padding-left: 1.5em; }
+.article li { margin: .3em 0; }
+.article img { max-width: 100%; border-radius: var(--radius); }
+.headerlink { opacity: 0; margin-left: 8px; font-size: .8em; text-decoration: none; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink { opacity: .55; }
+
+/* blockquotes */
+.article blockquote {
+  margin: 1.2em 0; padding: 12px 18px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--ink-soft);
+}
+.article blockquote p { margin: .4em 0; }
+
+/* code */
+code {
+  font-family: "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  font-size: .86em; background: var(--bg-code); padding: .14em .42em;
+  border-radius: 6px; color: var(--accent-ink);
+}
+pre {
+  background: var(--bg-code); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; overflow-x: auto; line-height: 1.5; box-shadow: var(--shadow);
+}
+pre code { background: none; padding: 0; color: var(--ink); font-size: .84rem; }
+
+/* tables */
+.table-wrap {
+  overflow-x: auto; margin: 1.3em 0; border-radius: var(--radius);
+  border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--bg-card);
+}
+table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+th, td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+thead th {
+  background: var(--accent-soft); color: var(--accent-ink);
+  font-size: .74rem; letter-spacing: .07em; text-transform: uppercase;
+  position: sticky; top: 0;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+
+/* evidence badges */
+.badge {
+  display: inline-block; font-size: .66rem; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 9px; border-radius: 999px; vertical-align: middle; white-space: nowrap;
+}
+.badge-paper     { background: #dbeafe; color: #1d4ed8; }
+.badge-measured  { background: #dcfce7; color: #15803d; }
+.badge-derived   { background: #fef3c7; color: #b45309; }
+.badge-inference { background: #f3e8ff; color: #7e22ce; }
+.badge-proposal  { background: #fee2e2; color: #b91c1c; }
+html[data-theme="dark"] .badge-paper     { background: #1e3a5f; color: #93c5fd; }
+html[data-theme="dark"] .badge-measured  { background: #14432a; color: #86efac; }
+html[data-theme="dark"] .badge-derived   { background: #4a3510; color: #fcd34d; }
+html[data-theme="dark"] .badge-inference { background: #3b2160; color: #d8b4fe; }
+html[data-theme="dark"] .badge-proposal  { background: #4c1d1d; color: #fca5a5; }
+
+/* mermaid */
+.mermaid-wrap {
+  overflow-x: auto; margin: 1.4em 0; padding: 18px;
+  background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); text-align: center;
+}
+
+/* back to top */
+#topBtn {
+  position: fixed; right: 22px; bottom: 22px; width: 42px; height: 42px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--bg-card);
+  color: var(--ink); cursor: pointer; font-size: 1.1rem; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease;
+}
+#topBtn.show { opacity: 1; pointer-events: auto; }
+#topBtn:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+footer {
+  border-top: 1px solid var(--line); padding: 26px; text-align: center;
+  color: var(--ink-faint); font-size: .8rem;
+}
+footer a { color: var(--accent-ink); text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<header class="site-header">
+  <a class="home" href="index.html"><span class="dot">🌧️</span> ARG Docs</a>
+  <nav class="doc-nav"><a href="deep_research_analysis.html" class="">🔬 Deep Research Analysis</a><a href="research_paper_analysis.html" class="">📚 Research Paper Analysis</a><a href="project_handbook.html" class="">📖 Project Handbook</a><a href="progress.html" class="">📈 Progress</a><a href="roadmap.html" class="active">🗺️ Roadmap</a></nav>
+  <button id="themeBtn" title="Toggle theme">🌙</button>
+</header>
+<div class="hero"><div class="hero-inner">
+  <div class="emoji">🗺️</div>
+  <h1>Roadmap — Acoustic Rain Gauge</h1>
+  <p class="tagline">Phased research plan: near-term wins, medium-term structure, long-term bets.</p>
+  <div class="meta-chips"><span class="chip">📝 1,496 words</span><span class="chip">⏱️ ~7 min read</span><span class="chip">📄 source: ROADMAP.md</span></div>
+</div></div>
+<div class="layout">
+  <aside class="sidebar"><h4>On this page</h4><div class="toc">
+<ul>
+<li><a href="#the-strategic-bet">The strategic bet</a></li>
+<li><a href="#phase-a--near-term-weeks-cheap-high-information-no-new-data">Phase A — Near-term (weeks). Cheap, high-information, no new data.</a></li>
+<li><a href="#phase-b--medium-term-12-months-new-structure-new-comparisons">Phase B — Medium-term (1–2 months). New structure, new comparisons.</a></li>
+<li><a href="#phase-c--long-term-312-months-needs-new-hardware-or-new-data">Phase C — Long-term (3–12 months). Needs new hardware or new data.</a></li>
+<li><a href="#high-risk--high-reward">High-risk / high-reward</a></li>
+<li><a href="#deployable-today-no-research-needed">Deployable today, no research needed</a></li>
+<li><a href="#publication--ip--commercial">Publication / IP / commercial</a></li>
+<li><a href="#what-we-are-explicitly-not-doing-and-why">What we are explicitly not doing, and why</a></li>
+</ul>
+</div>
+</aside>
+  <main class="article"><h1 id="roadmap--acoustic-rain-gauge">Roadmap — Acoustic Rain Gauge<a class="headerlink" href="#roadmap--acoustic-rain-gauge" title="Permanent link">¶</a></h1>
+<p><em>Last updated: 2026-07-16. Derived from <a href="deep_research_analysis.html">DEEP_RESEARCH_ANALYSIS.md</a>; status facts from <a href="progress.html">PROGRESS.md</a> and <a href="../reports/"><code>docs/reports/</code></a>.</em></p>
+<p><strong>Where we are (measured):</strong> classifier AUC-ROC <strong>0.887</strong>; regressor <strong>R² = 0.5429</strong> (learned stacking ensemble, <a href="../reports/ensemble_stack_report.json"><code>reports/ensemble_stack_report.json</code></a>); 780,725 clips / 19 campaigns / 8 kHz / 10 s; ESP32-S3 + INMP441 firmware built and streaming.</p>
+<p><strong>Benchmarks:</strong> SARID R² 0.765, Monti &amp; Ntalampiras R² 0.787 — both single-site, curated, rain-only. Xavier et al. hourly R² &gt; 0.85 cross-site with a <em>much</em> simpler model. RHD commercial acoustic disdrometer: ±15% intensity.</p>
+<hr />
+<h2 id="the-strategic-bet">The strategic bet<a class="headerlink" href="#the-strategic-bet" title="Permanent link">¶</a></h2>
+<p>The research analysis changed what this project should optimize. Three findings drive everything below:</p>
+<ol>
+<li><strong>Our per-clip R² is probably the wrong headline number.</strong> A 10-second clip against a 0.2 mm-per-tip bucket is dominated by label quantization at light rain rates. Xavier et al. got R² 0.62 → 0.85+ from the <em>same model</em> by aggregating to hourly. We have never tested this, and it costs a few hours.</li>
+<li><strong>A single audio→intensity regressor has a physics-imposed ceiling.</strong> Lee &amp; Zawadzki quantify it: ~41% irreducible error unless the model is conditioned on rain <em>regime</em>. Our gap to SARID is partly a dataset-difficulty gap, not a competence gap.</li>
+<li><strong>Our real differentiator is not accuracy — it's the dataset.</strong> 19 campaigns over 2.5 years with realistic imbalance. Nobody else in this field can measure cross-deployment generalization. That is the contribution worth making.</li>
+</ol>
+<p>So: <strong>stop chasing 0.787 on a curated benchmark. Start measuring what our number means, and publish the thing only we can.</strong></p>
+<hr />
+<h2 id="phase-a--near-term-weeks-cheap-high-information-no-new-data">Phase A — Near-term (weeks). Cheap, high-information, no new data.<a class="headerlink" href="#phase-a--near-term-weeks-cheap-high-information-no-new-data" title="Permanent link">¶</a></h2>
+<p>Everything here uses data and models that already exist.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Why</th>
+<th>Effort</th>
+<th>Success =</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A1</strong></td>
+<td><strong>Integration-time scaling analysis</strong></td>
+<td>Xavier: R² 0.62→0.85 from aggregation alone. Our labels are tip-quantized; per-clip R² may be measuring label noise, not model error</td>
+<td>~1 day, no retraining</td>
+<td>R² vs {10 s, 1, 5, 15 min, 1, 3 h} curve, per campaign. <strong>Either result is publishable</strong></td>
+</tr>
+<tr>
+<td><strong>A2</strong></td>
+<td><strong>Leave-one-campaign-out CV</strong></td>
+<td>The only honest cross-deployment number obtainable from our data — and the one nobody else can produce</td>
+<td>Compute only</td>
+<td>19-fold LOCO R²/AUC; per-campaign breakdown</td>
+</tr>
+<tr>
+<td><strong>A3</strong></td>
+<td><strong>Physics-band features</strong></td>
+<td>3-way convergence (Xavier + Monti + our own SHAP) on 0–797 Hz (amount) and 1641–2719 Hz (detection)</td>
+<td>~1 day</td>
+<td>2 Welch-PSD scalars added to the master store; A/B vs current 175</td>
+</tr>
+<tr>
+<td><strong>A4</strong></td>
+<td><strong>Spectral kurtosis + modulation spectrum</strong></td>
+<td>Separates impulsive rain from stationary wind <em>within</em> a band — no energy feature can. Absent from the entire library</td>
+<td>~2 days</td>
+<td>Added; A/B on false-positive rate</td>
+</tr>
+<tr>
+<td><strong>A5</strong></td>
+<td><strong>Per-campaign dry-ambient calibration</strong></td>
+<td>Ma &amp; Nystuen self-calibration. We have 666k dry clips as a free per-campaign reference. Strictly better than peak-norm <em>or</em> no-norm</td>
+<td>~1 day</td>
+<td>Cross-campaign variance drops; LOCO (A2) improves</td>
+</tr>
+<tr>
+<td><strong>A6</strong></td>
+<td><strong>Fix the docs</strong></td>
+<td>Handbook flags README/PROGRESS as behind the code</td>
+<td>done in this pass</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>A1 and A2 first.</strong> They're the cheapest and they may redefine the target.</p>
+<hr />
+<h2 id="phase-b--medium-term-12-months-new-structure-new-comparisons">Phase B — Medium-term (1–2 months). New structure, new comparisons.<a class="headerlink" href="#phase-b--medium-term-12-months-new-structure-new-comparisons" title="Permanent link">¶</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Why</th>
+<th>Risk</th>
+<th>Success =</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>B1</strong></td>
+<td><strong>Run our pipeline on public SARID</strong></td>
+<td>Calibrates our 0.5429 against 0.765/0.787 on <em>their</em> data. Turns an apparent shortfall into a quantified difficulty gap</td>
+<td>Low</td>
+<td>Head-to-head table</td>
+</tr>
+<tr>
+<td><strong>B2</strong></td>
+<td><strong>Regime-conditioned mixture-of-experts</strong></td>
+<td>Lee &amp; Zawadzki: 41%→7% <em>if</em> regime is known. Our stack's outsized gain suggests it's already doing this implicitly</td>
+<td>Medium</td>
+<td>Beat 0.5429; regimes physically interpretable</td>
+</tr>
+<tr>
+<td><strong>B3</strong></td>
+<td><strong>Resolve DL degradation at scale</strong></td>
+<td>Open problem. New hypothesis: it's <strong>campaign distribution shift</strong>, not the learning rate — the pilot is IID-shuffled, the full run isn't</td>
+<td>Medium</td>
+<td>Shuffled-vs-chronological + single-campaign ablations settle it</td>
+</tr>
+<tr>
+<td><strong>B4</strong></td>
+<td><strong>Foundation-model embeddings (BEATs/CLAP/AST)</strong></td>
+<td>Large pretrained gain <em>predicted for the classifier</em>; <strong>predicted to disappoint for the regressor</strong> (semantic embeddings are often level-invariant, and level is our label)</td>
+<td>Low</td>
+<td>Measure both tasks <strong>separately</strong> — the asymmetry is the finding</td>
+</tr>
+<tr>
+<td><strong>B5</strong></td>
+<td><strong>FFT window sweep</strong></td>
+<td>Monti: 4096 helps — <strong>but at 44.1 kHz.</strong> At our 8 kHz the equivalent <em>duration</em> is ~1024, i.e. <strong>shorter</strong> than our current 2048. Naive port is backwards</td>
+<td>Low</td>
+<td>1024/2048/4096 measured</td>
+</tr>
+<tr>
+<td><strong>B6</strong></td>
+<td><strong>Onset-latency benchmark</strong></td>
+<td>Flood warning cares about detection latency, not mm (NHESS 2023)</td>
+<td>Low</td>
+<td>Seconds-to-detect distribution</td>
+</tr>
+<tr>
+<td><strong>B7</strong></td>
+<td><strong>Deploy T1 edge tier</strong></td>
+<td>ESP32-S3 computes band features (A3), sends ~40 B. LoRaWAN-compatible. ~1000× bandwidth cut</td>
+<td>Medium</td>
+<td>On-device features match server within tolerance</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="phase-c--long-term-312-months-needs-new-hardware-or-new-data">Phase C — Long-term (3–12 months). Needs new hardware or new data.<a class="headerlink" href="#phase-c--long-term-312-months-needs-new-hardware-or-new-data" title="Permanent link">¶</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Gated on</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>C1</strong></td>
+<td><strong>Anemometer on the next campaign</strong></td>
+<td><strong>Nothing — start now</strong></td>
+<td>Gates C2/C3. Six papers say wind is essential; we have zero wind data. <strong>The cheapest unblock available</strong></td>
+</tr>
+<tr>
+<td><strong>C2</strong></td>
+<td><strong>Wind-corrected labels</strong></td>
+<td>C1</td>
+<td>Kochendorfer: −27%→−4% bias from wind+temp alone. Treats wind as <em>label noise</em> (which it partly is) rather than a feature — explains Monti's null result</td>
+</tr>
+<tr>
+<td><strong>C3</strong></td>
+<td><strong>Wind estimated from the same audio (multi-task)</strong></td>
+<td>C1</td>
+<td><strong>Highest-ceiling idea in the analysis.</strong> Single-sensor wind-aware rain sensing. Patentable</td>
+</tr>
+<tr>
+<td><strong>C4</strong></td>
+<td><strong>Standardized sensing surface</strong></td>
+<td>Design work</td>
+<td>Our transfer function <em>is</em> the surface (the mic is in air, not water — Minnaert doesn't apply to us). RHD proves the engineered-hemisphere approach. Converts a modeling problem into a manufacturing one</td>
+</tr>
+<tr>
+<td><strong>C5</strong></td>
+<td><strong>Two-mic coherence</strong></td>
+<td>Second I2S mic</td>
+<td>Wind/rain/interference separation with no ML. S3 has the slot</td>
+</tr>
+<tr>
+<td><strong>C6</strong></td>
+<td><strong>Co-deployed disdrometer, one season</strong></td>
+<td>Budget</td>
+<td>The only way to <em>test</em> rather than infer the DSD/regime hypothesis. Highest scientific value per unit cost</td>
+</tr>
+<tr>
+<td><strong>C7</strong></td>
+<td><strong>Kinetic energy / erosivity target</strong></td>
+<td>—</td>
+<td>KE maps to acoustic energy more directly than mm/h does. <strong>We may be better at KE than at intensity</strong> — and soil-erosion modelers want KE</td>
+</tr>
+<tr>
+<td><strong>C8</strong></td>
+<td><strong>Weak supervision from GPM/reanalysis</strong></td>
+<td>—</td>
+<td>Çoban: models beat their own noisy teacher. Scales past gauge-paired campaigns</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="high-risk--high-reward">High-risk / high-reward<a class="headerlink" href="#high-risk--high-reward" title="Permanent link">¶</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Idea</th>
+<th>Payoff</th>
+<th>Why it might fail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Wind from audio (C3)</strong></td>
+<td>Single-sensor wind-aware ARG. Patent + paper</td>
+<td>Needs wind ground truth; wind may not be separable from rain at the mic</td>
+</tr>
+<tr>
+<td><strong>DSD from air-side audio</strong></td>
+<td>Would match a commercial disdrometer with a $10 mic</td>
+<td><strong>Minnaert bubble resonance is underwater-only</strong> — we'd need an empirical basis from a co-deployed disdrometer (C6)</td>
+</tr>
+<tr>
+<td><strong>Regime MoE (B2)</strong></td>
+<td>Literature says 41%→7%</td>
+<td>Regimes may not be acoustically separable at 10 s</td>
+</tr>
+<tr>
+<td><strong>Surface-wetness hysteresis</strong></td>
+<td>Free from timestamps; nobody models it</td>
+<td>Effect may be small vs other variance</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="deployable-today-no-research-needed">Deployable today, no research needed<a class="headerlink" href="#deployable-today-no-research-needed" title="Permanent link">¶</a></h2>
+<p><strong>Gauge fault detection.</strong> Microphone hears rain + co-located bucket reports zero ⇒ maintenance flag. Uses the classifier we already have (AUC 0.887), at the accuracy it already has, with no new work. It is the one application whose requirements our current system already exceeds — worth shipping while the research continues.</p>
+<hr />
+<h2 id="publication--ip--commercial">Publication / IP / commercial<a class="headerlink" href="#publication--ip--commercial" title="Permanent link">¶</a></h2>
+<p><strong>Papers, in order of readiness:</strong>
+1. <strong>"How far does an acoustic rain gauge travel?"</strong> (A1+A2+B1) — the first cross-deployment generalization benchmark in acoustic rainfall estimation, at operationally-relevant integration times, calibrated against the public SARID benchmark. <strong>Only we can write this.</strong> Directly answers Monti &amp; Ntalampiras's stated future work.
+2. <strong>"Regime-conditioned acoustic rainfall estimation"</strong> (B2) — literature-mandated by Lee &amp; Zawadzki, unattempted by anyone.
+3. <strong>Dataset paper</strong> — 780,725 clips, 19 campaigns, 2.5 years, realistic imbalance. The field's datasets are all single-site; this is a resource contribution regardless of model results.</p>
+<p><strong>Patent candidates:</strong> wind-from-audio multi-task estimation (C3); standardized sensing surface + band-feature edge pipeline (C4+B7).</p>
+<p><strong>Commercial:</strong> the bar is RHD's <strong>±15% intensity with a dedicated engineered surface</strong>. Matching that with a commodity MEMS mic is the headline product claim. The near-term wedge is gauge-fault detection and dense low-cost networks (Guico's engineering wrapper is solved; OpenIoT's Pi+LoRaWAN node is over-provisioned for what a $10 MCU at T1 can do).</p>
+<hr />
+<h2 id="what-we-are-explicitly-not-doing-and-why">What we are explicitly <em>not</em> doing, and why<a class="headerlink" href="#what-we-are-explicitly-not-doing-and-why" title="Permanent link">¶</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Not doing</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chasing 0.787 on SARID</td>
+<td>Saturating benchmark, curated single-site data. Our value is elsewhere</td>
+</tr>
+<tr>
+<td>Full DL on-device (T4)</td>
+<td>Our DL doesn't beat the stack, and the stack needs 4 models. The <strong>classical track is the deployment track</strong></td>
+</tr>
+<tr>
+<td>Re-trying hurdle models as-is</td>
+<td>Failed twice (−0.097, 0.076 vs 0.226). <strong>But note:</strong> they gated on <em>rain/no-rain</em>; B2 gates on <em>regime</em>. The hurdle result refutes one bad gate, <strong>not</strong> mixture-of-experts</td>
+</tr>
+<tr>
+<td>Camera fusion</td>
+<td>Defeats the cheap/night/privacy premise</td>
+</tr>
+<tr>
+<td>Federated / meta / continual learning</td>
+<td>Solutions to problems we have no evidence of</td>
+</tr>
+<tr>
+<td>LPC, PLP, chroma</td>
+<td>Speech/music features; no rain physics behind them</td>
+</tr>
+<tr>
+<td>Worrying about 8 kHz</td>
+<td><strong><span class="badge badge-measured" title="Resolved">Resolved</span></strong> All evidence-backed bands are &lt; 3.4 kHz, under our 4 kHz Nyquist. Two papers with 3–6× our bandwidth searched their full range and landed inside ours</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><em>Ranked scoring for every direction: <a href="deep_research_analysis.html#13-ranked-research-directions">DEEP_RESEARCH_ANALYSIS.md § 13</a>.</em></p></main>
+</div>
+<footer>Acoustic Rain Gauge · generated from <a href="../ROADMAP.md">ROADMAP.md</a> · source of truth is the Markdown file</footer>
+<button id="topBtn" title="Back to top">↑</button>
+<script>
+(function () {
+  const root = document.documentElement;
+  const stored = localStorage.getItem('arg-docs-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const apply = (t) => {
+    root.setAttribute('data-theme', t);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  };
+  apply(stored || (prefersDark ? 'dark' : 'light'));
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('arg-docs-theme', next);
+    apply(next);
+    if (window.rerenderMermaid) window.rerenderMermaid(next);
+  });
+
+  const bar = document.getElementById('progress');
+  const topBtn = document.getElementById('topBtn');
+  addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    if (bar) bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    if (topBtn) topBtn.classList.toggle('show', h.scrollTop > 600);
+  }, { passive: true });
+  if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // scroll-spy for the TOC
+  const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+  if (links.length) {
+    const map = new Map();
+    links.forEach(a => {
+      const el = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+      if (el) map.set(el, a);
+    });
+    let current = null;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          if (current) current.classList.remove('active');
+          current = map.get(e.target);
+          if (current) {
+            current.classList.add('active');
+            current.scrollIntoView({ block: 'nearest' });
+          }
+        }
+      });
+    }, { rootMargin: '-70px 0px -70% 0px' });
+    map.forEach((_, el) => obs.observe(el));
+  }
+})();
+</script>
+
+</body>
+</html>

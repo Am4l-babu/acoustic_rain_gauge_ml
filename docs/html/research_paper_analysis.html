@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Paper Analysis — Identification of Mismatched PDFs · Acoustic Rain Gauge</title>
+<style>
+:root {
+  --hue: 199;
+  --bg: #f6f7fb;
+  --bg-card: #ffffff;
+  --bg-code: #eef0f6;
+  --ink: #1b2030;
+  --ink-soft: #4a5268;
+  --ink-faint: #7b8399;
+  --line: #e2e5ef;
+  --accent: hsl(var(--hue), 70%, 46%);
+  --accent-soft: hsl(var(--hue), 75%, 95%);
+  --accent-ink: hsl(var(--hue), 60%, 32%);
+  --shadow: 0 1px 3px rgba(20, 25, 45, .07), 0 8px 24px rgba(20, 25, 45, .06);
+  --radius: 14px;
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  --bg: #0e1118;
+  --bg-card: #161b26;
+  --bg-code: #1d2331;
+  --ink: #e8eaf2;
+  --ink-soft: #aab2c5;
+  --ink-faint: #6f7890;
+  --line: #262d3d;
+  --accent: hsl(var(--hue), 75%, 62%);
+  --accent-soft: hsl(var(--hue), 45%, 17%);
+  --accent-ink: hsl(var(--hue), 80%, 74%);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: 16px;
+  transition: background .25s ease, color .25s ease;
+}
+
+/* ---- progress bar ---- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, hsl(var(--hue),80%,55%), hsl(calc(var(--hue) + 60),80%,60%));
+  z-index: 100; transition: width .1s linear;
+}
+
+/* ---- header ---- */
+.site-header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 22px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.site-header .home {
+  font-weight: 700; text-decoration: none; color: var(--ink);
+  display: flex; align-items: center; gap: 8px; font-size: .95rem;
+  white-space: nowrap;
+}
+.site-header .home .dot {
+  width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  background: linear-gradient(135deg, hsl(var(--hue),75%,55%), hsl(calc(var(--hue) + 50),75%,60%));
+  font-size: 14px;
+}
+.doc-nav { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; }
+.doc-nav a {
+  text-decoration: none; color: var(--ink-soft); font-size: .82rem;
+  padding: 6px 11px; border-radius: 9px; white-space: nowrap;
+}
+.doc-nav a:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.doc-nav a.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+#themeBtn {
+  border: 1px solid var(--line); background: var(--bg-card); color: var(--ink);
+  border-radius: 9px; padding: 5px 11px; cursor: pointer; font-size: .95rem;
+  flex-shrink: 0;
+}
+#themeBtn:hover { border-color: var(--accent); }
+
+/* ---- hero ---- */
+.hero {
+  padding: 54px 26px 40px;
+  background:
+    radial-gradient(1100px 420px at 12% -10%, hsla(var(--hue), 80%, 60%, .16), transparent 60%),
+    radial-gradient(900px 380px at 88% -20%, hsla(calc(var(--hue) + 70), 80%, 60%, .12), transparent 60%);
+  border-bottom: 1px solid var(--line);
+}
+.hero-inner { max-width: 1160px; margin: 0 auto; }
+.hero .emoji { font-size: 2.4rem; }
+.hero h1 {
+  margin: 10px 0 8px; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.15;
+  letter-spacing: -.02em;
+  background: linear-gradient(100deg, var(--ink) 30%, hsl(var(--hue), 70%, 55%));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero .tagline { color: var(--ink-soft); max-width: 68ch; margin: 0 0 18px; font-size: 1.02rem; }
+.meta-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: .76rem; padding: 4px 12px; border-radius: 999px;
+  background: var(--bg-card); border: 1px solid var(--line); color: var(--ink-soft);
+  box-shadow: var(--shadow);
+}
+
+/* ---- layout ---- */
+.layout {
+  max-width: 1160px; margin: 0 auto; padding: 30px 26px 90px;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px;
+  align-items: start;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } .sidebar { display: none; } }
+
+/* ---- sidebar TOC ---- */
+.sidebar { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto; padding-right: 4px; }
+.sidebar h4 {
+  margin: 4px 0 10px; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc > ul > li > ul { padding-left: 14px; }
+.toc ul ul ul { display: none; }               /* cap depth shown */
+.toc a {
+  display: block; padding: 4px 10px; margin: 1px 0; border-left: 2px solid transparent;
+  color: var(--ink-soft); text-decoration: none; font-size: .82rem; line-height: 1.35;
+  border-radius: 0 7px 7px 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.toc a:hover { color: var(--accent-ink); background: var(--accent-soft); }
+.toc a.active { color: var(--accent-ink); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* ---- article ---- */
+.article { min-width: 0; }
+.article h1, .article h2, .article h3, .article h4 { letter-spacing: -.015em; line-height: 1.25; scroll-margin-top: 84px; }
+.article h1 { font-size: 1.75rem; margin: 2.2em 0 .6em; }
+.article h2 {
+  font-size: 1.42rem; margin: 2.4em 0 .7em; padding-bottom: .35em;
+  border-bottom: 2px solid var(--line); position: relative;
+}
+.article h2::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 64px; height: 2px;
+  background: linear-gradient(90deg, hsl(var(--hue),75%,55%), transparent);
+}
+.article h3 { font-size: 1.13rem; margin: 1.9em 0 .5em; }
+.article h4 { font-size: 1rem; margin: 1.6em 0 .4em; color: var(--ink-soft); }
+.article > :first-child { margin-top: 0; }
+.article p { margin: .85em 0; }
+.article a { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid transparent; }
+.article a:hover { border-bottom-color: var(--accent-ink); }
+.article strong { color: var(--ink); }
+.article hr { border: none; border-top: 1px solid var(--line); margin: 2.6em 0; }
+.article ul, .article ol { padding-left: 1.5em; }
+.article li { margin: .3em 0; }
+.article img { max-width: 100%; border-radius: var(--radius); }
+.headerlink { opacity: 0; margin-left: 8px; font-size: .8em; text-decoration: none; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink { opacity: .55; }
+
+/* blockquotes */
+.article blockquote {
+  margin: 1.2em 0; padding: 12px 18px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--ink-soft);
+}
+.article blockquote p { margin: .4em 0; }
+
+/* code */
+code {
+  font-family: "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  font-size: .86em; background: var(--bg-code); padding: .14em .42em;
+  border-radius: 6px; color: var(--accent-ink);
+}
+pre {
+  background: var(--bg-code); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; overflow-x: auto; line-height: 1.5; box-shadow: var(--shadow);
+}
+pre code { background: none; padding: 0; color: var(--ink); font-size: .84rem; }
+
+/* tables */
+.table-wrap {
+  overflow-x: auto; margin: 1.3em 0; border-radius: var(--radius);
+  border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--bg-card);
+}
+table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+th, td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+thead th {
+  background: var(--accent-soft); color: var(--accent-ink);
+  font-size: .74rem; letter-spacing: .07em; text-transform: uppercase;
+  position: sticky; top: 0;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+
+/* evidence badges */
+.badge {
+  display: inline-block; font-size: .66rem; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 9px; border-radius: 999px; vertical-align: middle; white-space: nowrap;
+}
+.badge-paper     { background: #dbeafe; color: #1d4ed8; }
+.badge-measured  { background: #dcfce7; color: #15803d; }
+.badge-derived   { background: #fef3c7; color: #b45309; }
+.badge-inference { background: #f3e8ff; color: #7e22ce; }
+.badge-proposal  { background: #fee2e2; color: #b91c1c; }
+html[data-theme="dark"] .badge-paper     { background: #1e3a5f; color: #93c5fd; }
+html[data-theme="dark"] .badge-measured  { background: #14432a; color: #86efac; }
+html[data-theme="dark"] .badge-derived   { background: #4a3510; color: #fcd34d; }
+html[data-theme="dark"] .badge-inference { background: #3b2160; color: #d8b4fe; }
+html[data-theme="dark"] .badge-proposal  { background: #4c1d1d; color: #fca5a5; }
+
+/* mermaid */
+.mermaid-wrap {
+  overflow-x: auto; margin: 1.4em 0; padding: 18px;
+  background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); text-align: center;
+}
+
+/* back to top */
+#topBtn {
+  position: fixed; right: 22px; bottom: 22px; width: 42px; height: 42px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--bg-card);
+  color: var(--ink); cursor: pointer; font-size: 1.1rem; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease;
+}
+#topBtn.show { opacity: 1; pointer-events: auto; }
+#topBtn:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+footer {
+  border-top: 1px solid var(--line); padding: 26px; text-align: center;
+  color: var(--ink-faint); font-size: .8rem;
+}
+footer a { color: var(--accent-ink); text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<header class="site-header">
+  <a class="home" href="index.html"><span class="dot">🌧️</span> ARG Docs</a>
+  <nav class="doc-nav"><a href="deep_research_analysis.html" class="">🔬 Deep Research Analysis</a><a href="research_paper_analysis.html" class="active">📚 Research Paper Analysis</a><a href="project_handbook.html" class="">📖 Project Handbook</a><a href="progress.html" class="">📈 Progress</a><a href="roadmap.html" class="">🗺️ Roadmap</a></nav>
+  <button id="themeBtn" title="Toggle theme">🌙</button>
+</header>
+<div class="hero"><div class="hero-inner">
+  <div class="emoji">📚</div>
+  <h1>Research Paper Analysis — Identification of Mismatched PDFs</h1>
+  <p class="tagline">Paper-by-paper analysis of the acoustic rainfall measurement literature.</p>
+  <div class="meta-chips"><span class="chip">📝 8,229 words</span><span class="chip">⏱️ ~37 min read</span><span class="chip">📄 source: RESEARCH_PAPER_ANALYSIS.md</span></div>
+</div></div>
+<div class="layout">
+  <aside class="sidebar"><h4>On this page</h4><div class="toc">
+<ul>
+<li><a href="#1-headline-findings">1. Headline findings</a></li>
+<li><a href="#2-identification-table-cryptic-filename--actual-paper">2. Identification table (cryptic filename → actual paper)</a></li>
+<li><a href="#3-paper-by-paper-analysis">3. Paper-by-paper analysis</a><ul>
+<li><a href="#tier-a--core-audio-based-rainfall-estimation-directly-on-this-projects-problem">TIER A — Core: audio-based rainfall estimation (directly on this project's problem)</a></li>
+<li><a href="#tier-b--supporting-physics-and-meteorological-feature-papers">TIER B — Supporting physics and meteorological-feature papers</a></li>
+<li><a href="#tier-e--newly-added-papers-2026-07-15-batch-gauge-error-correction--sampling-uncertainty">TIER E — Newly added papers (2026-07-15 batch): gauge error correction &amp; sampling uncertainty</a></li>
+<li><a href="#tier-c--instrumentation-calibration-and-standards-context">TIER C — Instrumentation, calibration, and standards context</a></li>
+<li><a href="#tier-d--off-topic-files-flagged-not-rainfall-audio-relevant">TIER D — Off-topic files (flagged; not rainfall-audio relevant)</a></li>
+</ul>
+</li>
+<li><a href="#4-new-papers-added-and-renamed-2026-07-15">4. New papers added and renamed (2026-07-15)</a></li>
+<li><a href="#5-duplicate-cleanup--executed-2026-07-15">5. Duplicate cleanup — executed 2026-07-15</a></li>
+</ul>
+</div>
+</aside>
+  <main class="article"><h1 id="research-paper-analysis--identification-of-mismatched-pdfs">Research Paper Analysis — Identification of Mismatched PDFs<a class="headerlink" href="#research-paper-analysis--identification-of-mismatched-pdfs" title="Permanent link">¶</a></h1>
+<p><strong>Date:</strong> 2026-07-15 (updated same day with 8 newly added papers + full library duplicate cleanup)
+<strong>Scope:</strong> All PDFs in <code>ARG_Research/</code> whose filenames did not state what paper they contain (arXiv IDs, publisher codes, <code>document.pdf</code>, <code>sarid.pdf</code>, journal-code filenames, etc.). Every file below was opened and its actual content read (text extraction via pypdf; the two scanned-image papers were identified by rendering and reading their first-page images). MD5 hashing across all PDFs was used to detect content-identical copies hiding under different names.</p>
+<p><strong>Update log (same day):</strong> 8 new PDFs were added to <code>research papers\</code> with cryptic auto-downloaded filenames (<code>Adjustment_of_1_min_rain_gauge_time_seri.pdf</code>, <code>Bias_correction_of_global_daily_rain_gau.pdf</code>, <code>Corrections_of_rainfall_data_obtained_by-2.pdf</code>, <code>Numerical_simulation_studies_of_rain_gag.pdf</code>, <code>Rainfall_and_sampling_uncertainties_A_ra.pdf</code>, <code>Rainfall_variability_and_its_effect_on_r(-1).pdf</code>, <code>The_Quantification_and_Correction_of_Win.pdf</code>, <code>Variability_of_Drop_Size_Distributions_T(-1).pdf</code>). All were identified, analyzed (Section 5), and renamed to the <code>YYYY - Title.pdf</code> convention. A full-library duplicate sweep (see Section 6) then removed <strong>117 duplicate PDFs</strong> (all of <code>research papers\duplicates\</code>, which is now deleted, plus 5 stray exact/near-exact duplicates found elsewhere), taking the library from ~178 PDFs down to <strong>172 unique PDFs</strong>.</p>
+<p>For each paper: what it is, what the authors do, the results of their work, what can be inferred, and how it helps or supports <strong>this project's idea</strong> (estimating rainfall presence + intensity from ambient audio with ML, benchmarked against SARID; current best R² = 0.531 via stacking ensemble, SARID baseline R² = 0.765).</p>
+<hr />
+<h2 id="1-headline-findings">1. Headline findings<a class="headerlink" href="#1-headline-findings" title="Permanent link">¶</a></h2>
+<ol>
+<li><strong><code>0000146.pdf</code> is the most important "hidden" paper in the library.</strong> It is Monti &amp; Ntalampiras (EUSIPCO 2025), <em>On acoustic monitoring of rainfall intensity</em> — the current state of the art <strong>on the exact SARID benchmark this project compares against</strong>: R² = 0.787 (vs SARID's 0.765) using a stacking ensemble of transformers, the same ensemble strategy this project already uses.</li>
+<li><strong><code>sarid.pdf</code> and <code>1-s2.0-S2666498424000644-main.pdf</code> are both the SARID paper itself</strong> (Wang et al. 2024), meaning the library holds ~4 copies of it under different names.</li>
+<li><strong><code>document.pdf</code>, <code>2309.16867v1.pdf</code>, and <code>Towards High Resolution Weather Monitoring with Sound Data.pdf</code> are all the same paper</strong> (Çoban, Perra &amp; Mandel 2023).</li>
+<li><strong>Two genuinely mismatched files:</strong> <code>Rain disdrometer and hail detection.pdf</code> is <strong>not a research paper</strong> — it is the commercial RHD acoustic-disdrometer <strong>datasheet</strong> (byte-identical to <code>Category 1\Datasheet_RHD_V1_41.pdf</code>). And <code>sensors-20-07214.pdf</code> is an off-topic <strong>DEM/SAR interferometry</strong> paper, not a rainfall paper.</li>
+<li>The two scanned (no text layer) files are classics: <strong>Joss &amp; Waldvogel (1969)</strong> on raindrop-size-distribution sampling errors, and <strong>Nystuen (1996)</strong>, the foundational acoustical-rainfall-analysis paper.</li>
+</ol>
+<h2 id="2-identification-table-cryptic-filename--actual-paper">2. Identification table (cryptic filename → actual paper)<a class="headerlink" href="#2-identification-table-cryptic-filename--actual-paper" title="Permanent link">¶</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Actual paper</th>
+<th>Duplicate of</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>research papers\0000146.pdf</code></td>
+<td>Monti &amp; Ntalampiras, <em>On acoustic monitoring of rainfall intensity</em>, EUSIPCO 2025</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>research papers\sarid.pdf</code></td>
+<td>Wang et al., <em>Estimating rainfall intensity based on surveillance audio and deep-learning</em> (SARID), Environ. Sci. Ecotechnol. 22, 2024</td>
+<td><code>1-s2.0-S2666498424000644-main.pdf</code>, <code>2024 - Estimating rainfall intensity...</code> (×2)</td>
+</tr>
+<tr>
+<td><code>research papers\1-s2.0-S2666498424000644-main.pdf</code></td>
+<td>Same SARID paper (Elsevier download name)</td>
+<td>see above</td>
+</tr>
+<tr>
+<td><code>research papers\document.pdf</code></td>
+<td>Çoban, Perra &amp; Mandel, <em>Towards High Resolution Weather Monitoring with Sound Data</em>, 2023 (arXiv:2309.16867)</td>
+<td><code>2309.16867v1.pdf</code>, <code>Towards High Resolution Weather Monitoring with Sound Data.pdf</code></td>
+</tr>
+<tr>
+<td><code>research papers\2309.16867v1.pdf</code></td>
+<td>Same Çoban et al. paper</td>
+<td>see above</td>
+</tr>
+<tr>
+<td><code>research papers\1805.01957v1.pdf</code></td>
+<td>Manandhar, Dev, Lee, Winkler &amp; Meng, <em>Systematic Study of Weather Variables for Rainfall Detection</em>, 2018 (arXiv:1805.01957)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>research papers\2110.11059v1.pdf</code></td>
+<td>Pathan, Wu, Lee, Yan &amp; Dev, <em>Analyzing the Impact of Meteorological Parameters on Rainfall Prediction</em>, 2021 (arXiv:2110.11059)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>research papers\atot-1520-0426_1996_013_0074_arards_2_0_co_2.pdf</code></td>
+<td>Nystuen, <em>Acoustical Rainfall Analysis: Rainfall Drop Size Distribution Using the Underwater Sound Field</em>, J. Atmos. Oceanic Technol. 13:74, 1996 (scanned)</td>
+<td><code>Acoustical Rainfall Analysis...pdf</code></td>
+</tr>
+<tr>
+<td><code>research papers\atot-1520-0426_1999_016_1025_rpoarg_2_0_co_2.pdf</code></td>
+<td>Nystuen, <em>Relative Performance of Automatic Rain Gauges under Different Rainfall Conditions</em>, JTECH 16:1025, 1999</td>
+<td><code>Relative Performance of Automatic Rain Gauges...</code> (research papers + Category 1)</td>
+</tr>
+<tr>
+<td><code>research papers\atot-jtech1773_1.pdf</code></td>
+<td>Ma &amp; Nystuen, <em>Passive Acoustic Detection and Measurement of Rainfall at Sea</em>, JTECH 22:1225, 2005</td>
+<td><code>duplicates\atot-jtech1773_1-1.pdf</code></td>
+</tr>
+<tr>
+<td><code>research papers\RaindropSizeDist......JASMay1969.pdf</code></td>
+<td>Joss &amp; Waldvogel, <em>Raindrop Size Distribution and Sampling Size Errors</em>, J. Atmos. Sci. 26:566–569, 1969 (scanned)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>research papers\preprints202512.1003.v1.pdf</code></td>
+<td>Dunkerley, <em>A New Device for Continuous, Real-Time Acoustic Measurement of Rain Inclination</em>, Preprints.org, Dec 2025</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>research papers\Paper_RainGaugeTippingBucketIEEE.pdf</code></td>
+<td>Prakosa, Wijonarko &amp; Rustandi, <em>The Performance Measurement Test on Rain Gauge of Tipping Bucket due to Controlling of the Water Flow Rate</em>, ElConRus 2018, pp. 1136–1140 (embedded in a proceedings extract)</td>
+<td>×2 in duplicates</td>
+</tr>
+<tr>
+<td><code>research papers\Rain disdrometer and hail detection.pdf</code></td>
+<td><strong>Not a paper</strong> — RHD acoustic rain-disdrometer &amp; hail sensor commercial datasheet</td>
+<td><code>Category 1\Datasheet_RHD_V1_41.pdf</code> (byte-identical)</td>
+</tr>
+<tr>
+<td><code>research papers\sensors-20-07214.pdf</code></td>
+<td>Mohammadi et al., <em>A Multi-Sensor Comparative Analysis on the Suitability of Generated DEM from Sentinel-1 SAR Interferometry...</em>, Sensors 20:7214, 2020 — <strong>off-topic</strong></td>
+<td><code>n.d. - A Multi-Sensor Comparative Analysis...</code> (×2)</td>
+</tr>
+<tr>
+<td><code>research papers\sensors-22-04381.pdf</code></td>
+<td>Kurşun, Güven &amp; Ersoy, <em>Utilizing Piezo Acoustic Sensors for the Identification of Surface Roughness and Textures</em>, Sensors 22:4381, 2022</td>
+<td><code>n.d. - Utilizing Piezo Acoustic Sensors...</code></td>
+</tr>
+<tr>
+<td><code>research papers\A_self-powered_microsystem_with_efficient_power_ma.pdf</code></td>
+<td>Zhao et al., <em>A self-powered microsystem with efficient power management for continuous wireless sensing</em>, Microsyst. Nanoeng. 12:178, 2026</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>research papers\AI_Methods_in_Sensor_Calibration.pdf</code></td>
+<td>Kou, Liu, Li, Qin &amp; Liu, <em>AI Methods in Sensor Calibration</em> (review), Sensors 26:2805, 2026</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Category 1\10.1109@TENCON.2018.8650318.pdf</code></td>
+<td>Cruz, Pangaliman, Amado &amp; Uy, <em>Development of Improved Acoustic Disdrometer Through Utilization of Machine Learning Algorithm</em>, IEEE TENCON 2018</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Category 1\information-11-00183-v2.pdf</code></td>
+<td>Avanzato &amp; Beritelli, <em>An Innovative Acoustic Rain Gauge Based on Convolutional Neural Networks</em>, Information 11(4):183, 2020</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Category 1\sensors-21-02687.pdf</code></td>
+<td>Liu, Li, Shang, Tang &amp; Zhang, <em>Measurement of Underwater Acoustic Energy Radiated by Single Raindrops</em>, Sensors 21:2687, 2021</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Category 1\Design_and_development_of_a_novel_acoustic_rain_se-1.pdf</code></td>
+<td>Guico, Abrajano, Domer &amp; Talusan, <em>Design and development of a novel acoustic rain sensor with automated telemetry</em>, MATEC Web Conf. 201:03003, 2018</td>
+<td><code>-2.pdf</code> is byte-identical</td>
+</tr>
+<tr>
+<td><code>Category 1\atot-1520-0426_2001_018_0883_motduf_2_0_co_2.pdf</code></td>
+<td>Green, Ostafichuk &amp; Rogak, <em>Measurement of Three-Dimensional Unsteady Flows Using an Inexpensive Multiple Disk Probe</em>, JTECH 18:883, 2001</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Category 1\scienceworld,+Vol+18(3)+pp+404-413+Siloko+et+al.pdf</code></td>
+<td>Siloko &amp; Uddin, <em>A Statistical Study of Wind Speed and its Connectivity with Relative Humidity and Temperature in Ughelli, Delta State, Nigeria</em>, Science World J. 18(3):404–413, 2023</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Category 1\CWOP-WMO8.pdf</code></td>
+<td>WMO-No. 8, <em>Guide to Meteorological Instruments and Methods of Observation</em>, 7th ed., 2008 (681 pp., CWOP copy)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Category 1\Datasheet_RHD_V1_41.pdf</code></td>
+<td>RHD acoustic rain-disdrometer &amp; hail sensor datasheet</td>
+<td><code>Rain disdrometer and hail detection.pdf</code></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-paper-by-paper-analysis">3. Paper-by-paper analysis<a class="headerlink" href="#3-paper-by-paper-analysis" title="Permanent link">¶</a></h2>
+<h3 id="tier-a--core-audio-based-rainfall-estimation-directly-on-this-projects-problem">TIER A — Core: audio-based rainfall estimation (directly on this project's problem)<a class="headerlink" href="#tier-a--core-audio-based-rainfall-estimation-directly-on-this-projects-problem" title="Permanent link">¶</a></h3>
+<hr />
+<h4 id="a1-monti--ntalampiras-2025--on-acoustic-monitoring-of-rainfall-intensity--eusipco-2025">A1. Monti &amp; Ntalampiras (2025) — <em>On acoustic monitoring of rainfall intensity</em> — EUSIPCO 2025<a class="headerlink" href="#a1-monti--ntalampiras-2025--on-acoustic-monitoring-of-rainfall-intensity--eusipco-2025" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\0000146.pdf</code> (name comes from the proceedings page stamp "146")</p>
+<p><strong>What they do:</strong> They take the public SARID dataset (the same benchmark this project uses) and build an optimized audio-regression pipeline: (a) low-pass filtering of audio before feature extraction, (b) auxiliary meteorological features (humidity, pressure, temperature, wind) concatenated after the convolutional pooling stage, (c) a sweep of FFT window lengths (rain sound is quasi-stationary, so longer windows → better frequency resolution), and (d) a <strong>stacking ensemble</strong> of three transformer regressors trained on MFCC, Mel, and STFT features, combined by a linear regressor. Code is public on Kaggle.</p>
+<p><strong>Results:</strong> Stacking ensemble achieves <strong>R² = 0.787, MAE = 0.52 mm/h, RMSE = 0.837 mm/h</strong>, beating the SARID baseline (R² 0.765, MAE 0.563, RMSE 0.88). Single transformer with MFCC alone reaches R² 0.777. Other findings: rainfall-relevant information is concentrated <strong>below ~2000 Hz</strong> (low-pass at 2–3 kHz slightly helps; 1 kHz hurts); an FFT window of <strong>4096 samples</strong> markedly improves MFCC models; naively concatenating meteorological parameters <strong>did not improve</strong> performance; errors remain largest at high intensities due to SARID's class imbalance.</p>
+<p><strong>Inference:</strong> The current published state of the art on SARID is ~0.79 R², set by exactly the architecture family (transformer + stacking ensemble) this project independently adopted. Even the best pipeline saturates near 0.79 on curated single-site data — this puts this project's 0.531 on messy 19-campaign field data in honest context. Their negative result on met-feature concatenation suggests simply appending wind speed as a dense feature may not close the gap; feature fusion strategy matters.</p>
+<p><strong>How it supports this project:</strong> (1) Validates the project's stacking-ensemble strategy — it is the winning approach on the benchmark. (2) Gives a concrete, citable SOTA number (0.787) to compare against instead of only the SARID baseline. (3) The &lt;2 kHz finding directly informs feature engineering (consider a low-pass or restricting Mel bands, and cheaper microphones/bandwidth). (4) The 4096-sample FFT window is a directly testable hyperparameter for the MFCC pipeline. (5) Their conclusions section explicitly calls for what this project already has: no-rain samples, realistic imbalance, and hierarchical detect-then-estimate modeling — this project is the answer to their "future work."</p>
+<hr />
+<h4 id="a2-wang-et-al-2024--estimating-rainfall-intensity-based-on-surveillance-audio-and-deep-learning-sarid--environ-sci-ecotechnol-22100450-doi-101016jese2024100450">A2. Wang et al. (2024) — <em>Estimating rainfall intensity based on surveillance audio and deep-learning</em> (SARID) — Environ. Sci. Ecotechnol. 22:100450, DOI 10.1016/j.ese.2024.100450<a class="headerlink" href="#a2-wang-et-al-2024--estimating-rainfall-intensity-based-on-surveillance-audio-and-deep-learning-sarid--environ-sci-ecotechnol-22100450-doi-101016jese2024100450" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>sarid.pdf</code>, <code>1-s2.0-S2666498424000644-main.pdf</code> (plus two named copies <code>2024 - Estimating rainfall intensity...</code>)</p>
+<p><strong>What they do:</strong> They build the first public dataset (SARID) for continuous rainfall-intensity regression from surveillance audio: 6 real rainfall events at Nanjing Normal University, segmented into <strong>12,066 4-second clips</strong>, annotated with rainfall intensity and environment metadata (underlying surface, temperature, humidity, wind). They then train an MFCC + Transformer baseline to regress intensity.</p>
+<p><strong>Results:</strong> Baseline achieves <strong>MAE ≈ 0.88 mm/h correlation/R = 0.765</strong> against ground truth. Demonstrates surveillance audio is a viable, all-weather, low-data-volume rain sensor complementary to video.</p>
+<p><strong>Inference:</strong> Audio alone carries enough information for continuous intensity regression, not just class-level detection — but their data is curated, single-site, and rain-only, so the reported score is an upper bound relative to realistic deployments.</p>
+<p><strong>How it supports this project:</strong> It is <em>the</em> benchmark and architectural template (MFCC + Transformer) the project's DL track follows, and the gap analysis (curated vs 19-campaign field data, rain-only vs 85/15 imbalance) is the core of this project's novelty claim. Every improvement here is measured against this paper.</p>
+<hr />
+<h4 id="a3-çoban-perra--mandel-2023--towards-high-resolution-weather-monitoring-with-sound-data--arxiv230916867">A3. Çoban, Perra &amp; Mandel (2023) — <em>Towards High Resolution Weather Monitoring with Sound Data</em> — arXiv:2309.16867<a class="headerlink" href="#a3-çoban-perra--mandel-2023--towards-high-resolution-weather-monitoring-with-sound-data--arxiv230916867" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>2309.16867v1.pdf</code>, <code>document.pdf</code>, <code>Towards High Resolution Weather Monitoring with Sound Data.pdf</code> (3 copies)</p>
+<p><strong>What they do:</strong> They classify rain, wind, and air-temperature conditions from ecoacoustic recordings, and — the key idea — use coarse satellite reanalysis weather data (MERRA-2, ~50 km/1 h, downscaled to 250 m via MicroMet) as <strong>weak labels</strong> to train acoustic classifiers without human annotation.</p>
+<p><strong>Results:</strong> Rain is the most successfully predicted variable. Classifiers trained from noisy MERRA-2 labels end up <strong>more accurate than the raw MERRA-2 data itself</strong>, and models trained this way approach fully supervised performance while requiring almost no manual labeling. Since MERRA-2 is global, the approach scales to any acoustic dataset worldwide.</p>
+<p><strong>Inference:</strong> Weak/self-supervision from coarse weather products can substitute for expensive co-located gauges; a model can distill a better signal than its own noisy teacher.</p>
+<p><strong>How it supports this project:</strong> Offers a path to scale beyond the 19 gauge-paired campaigns — future recordings without a co-located tipping bucket could still be pseudo-labeled from reanalysis or nearby-station data to expand training data, and it validates rain as the most acoustically learnable weather variable.</p>
+<hr />
+<h4 id="a4-avanzato--beritelli-2020--an-innovative-acoustic-rain-gauge-based-on-convolutional-neural-networks--information-114183-doi-103390info11040183">A4. Avanzato &amp; Beritelli (2020) — <em>An Innovative Acoustic Rain Gauge Based on Convolutional Neural Networks</em> — Information 11(4):183, DOI 10.3390/info11040183<a class="headerlink" href="#a4-avanzato--beritelli-2020--an-innovative-acoustic-rain-gauge-based-on-convolutional-neural-networks--information-114183-doi-103390info11040183" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>Category 1\information-11-00183-v2.pdf</code></p>
+<p><strong>What they do:</strong> Apply a CNN <strong>directly to the raw audio signal</strong> (no spectrogram) using 3-second sliding windows with 100 ms offset, classifying rain into 7 intensity classes ("No rain" → "Cloudburst"), targeting low-cost/low-power hardware (e.g., a sensor inside a street-lamp luminaire).</p>
+<p><strong>Results:</strong> Average accuracy <strong>75%</strong> over 7 classes, rising to <strong>93%</strong> if adjacent-class confusions are tolerated. Demonstrates short-response-time heavy-rain alerting on cheap hardware.</p>
+<p><strong>Inference:</strong> Classification (not regression) was the ceiling of pre-SARID audio work; most confusion happens between adjacent intensity classes — i.e., the audio→intensity mapping is smooth, which is favorable for regression approaches.</p>
+<p><strong>How it supports this project:</strong> Documents the pre-SARID state of the art the project's Research Gap section cites (classification-only), and supports the two-stage design: their "No rain" class as part of the classifier is precedent for the project's detection track. Their raw-waveform CNN is an architecture variant the DL track could ablate against MFCC input.</p>
+<hr />
+<h4 id="a5-cruz-pangaliman-amado--uy-2018--development-of-improved-acoustic-disdrometer-through-utilization-of-machine-learning-algorithm--ieee-tencon-2018-doi-101109tencon20188650318">A5. Cruz, Pangaliman, Amado &amp; Uy (2018) — <em>Development of Improved Acoustic Disdrometer Through Utilization of Machine Learning Algorithm</em> — IEEE TENCON 2018, DOI 10.1109/TENCON.2018.8650318<a class="headerlink" href="#a5-cruz-pangaliman-amado--uy-2018--development-of-improved-acoustic-disdrometer-through-utilization-of-machine-learning-algorithm--ieee-tencon-2018-doi-101109tencon20188650318" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>Category 1\10.1109@TENCON.2018.8650318.pdf</code></p>
+<p><strong>What they do:</strong> Build a prototype acoustic disdrometer from four piezoelectric sensors + Arduino + ZigBee, and add a <strong>K-nearest-neighbors classifier</strong> so the device can distinguish rainfall-intensity categories from ambient noise — addressing the classic weakness that acoustic disdrometers can't tell rain from noise.</p>
+<p><strong>Results:</strong> KNN predictive model reaches <strong>89.95% accuracy</strong> in categorizing rainfall intensity vs ambient noise.</p>
+<p><strong>Inference:</strong> Even very simple ML on piezo-acoustic signals separates rain from confounding noise; the rain/no-rain discrimination problem is tractable with modest features.</p>
+<p><strong>How it supports this project:</strong> Direct precedent for the project's detection stage (is-it-raining classifier) and for the claim that ML solves the ambient-noise confusion that killed earlier acoustic instruments. Also a hardware reference for a cheap piezo-based deployment variant.</p>
+<hr />
+<h4 id="a6-guico-abrajano-domer--talusan-2018--design-and-development-of-a-novel-acoustic-rain-sensor-with-automated-telemetry--matec-web-conf-20103003-doi-101051matecconf201820103003">A6. Guico, Abrajano, Domer &amp; Talusan (2018) — <em>Design and development of a novel acoustic rain sensor with automated telemetry</em> — MATEC Web Conf. 201:03003, DOI 10.1051/matecconf/201820103003<a class="headerlink" href="#a6-guico-abrajano-domer--talusan-2018--design-and-development-of-a-novel-acoustic-rain-sensor-with-automated-telemetry--matec-web-conf-20103003-doi-101051matecconf201820103003" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>Category 1\Design_and_development_of_a_novel_acoustic_rain_se-1.pdf</code> (and byte-identical <code>-2.pdf</code>)</p>
+<p><strong>What they do:</strong> Build a low-cost, solar-powered, weather-proof standalone acoustic rain sensor (microphone under a metal dome; acoustic signal power as the rain proxy) with SMS/mobile-internet telemetry, deployed next to standard gauges in the Philippines during the rainy season.</p>
+<p><strong>Results:</strong> Field deployment shows recorded acoustic signal power tracks rain events observed by co-located standard instruments, and demonstrates a practical, deployable, telemetered system for sub-kilometer rainfall monitoring in tropical regions.</p>
+<p><strong>Inference:</strong> The engineering wrapper (power, waterproofing, telemetry) around an acoustic rain sensor is solved and cheap; the limiting factor is the intensity-estimation model — exactly the part this project supplies.</p>
+<p><strong>How it supports this project:</strong> A blueprint for turning this project's model into a field instrument (enclosure, solar power, telemetry), and evidence for the low-cost/dense-network deployment story used to motivate the project.</p>
+<hr />
+<h4 id="a7-dunkerley-2025--a-new-device-for-continuous-real-time-acoustic-measurement-of-rain-inclination--preprintsorg-doi-1020944preprints2025121003v1-not-peer-reviewed">A7. Dunkerley (2025) — <em>A New Device for Continuous, Real-Time Acoustic Measurement of Rain Inclination</em> — Preprints.org, DOI 10.20944/preprints202512.1003.v1 (not peer-reviewed)<a class="headerlink" href="#a7-dunkerley-2025--a-new-device-for-continuous-real-time-acoustic-measurement-of-rain-inclination--preprintsorg-doi-1020944preprints2025121003v1-not-peer-reviewed" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\preprints202512.1003.v1.pdf</code></p>
+<p><strong>What they do:</strong> Introduce an inexpensive acoustic device that measures the <strong>inclination angle of wind-driven rain</strong> in real time (traditional paired-gauge methods only give long-period averages), while simultaneously recording rainfall duration and intermittency at high temporal resolution. Demonstrated during tropical trade-wind showers.</p>
+<p><strong>Results:</strong> The device continuously resolves rain inclination during showers and captures duration/intermittency with no extra apparatus; the paper is primarily a methods contribution (no accuracy benchmark against reference instruments yet).</p>
+<p><strong>Inference:</strong> Wind-driven rain arrives obliquely and faster than terminal velocity — meaning drop impact energy (and hence sound) depends on wind, not just intensity. Acoustics can measure this wind effect directly.</p>
+<p><strong>How it supports this project:</strong> Strong support for the project's identified "next lever": wind. It explains <em>why</em> wind confounds the audio→intensity mapping (oblique, super-terminal impacts change the acoustic signature) and shows the confounder is itself acoustically observable — suggesting wind could eventually be estimated from the same audio rather than requiring an anemometer.</p>
+<hr />
+<h4 id="a8-nystuen-1996--acoustical-rainfall-analysis-rainfall-drop-size-distribution-using-the-underwater-sound-field--jtech-1374-doi-1011751520-042619960130074arards20co2-scanned-copy">A8. Nystuen (1996) — <em>Acoustical Rainfall Analysis: Rainfall Drop Size Distribution Using the Underwater Sound Field</em> — JTECH 13:74, DOI 10.1175/1520-0426(1996)013&lt;0074:ARARDS&gt;2.0.CO;2 (scanned copy)<a class="headerlink" href="#a8-nystuen-1996--acoustical-rainfall-analysis-rainfall-drop-size-distribution-using-the-underwater-sound-field--jtech-1374-doi-1011751520-042619960130074arards20co2-scanned-copy" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>research papers\atot-1520-0426_1996_013_0074_arards_2_0_co_2.pdf</code> (scan), plus text-layer copy <code>Acoustical Rainfall Analysis Rainfall Drop Size Distribution Using the Underwater Sound Field.pdf</code></p>
+<p><strong>What they do:</strong> Formal <strong>inversion of the underwater ambient sound field to retrieve the raindrop size distribution (DSD)</strong>: laboratory-derived sound signatures of individual drop sizes form the basis functions; field measurements at the AOML Rain Gauge Facility (Miami) test both the forward problem (predict sound from DSD) and the inverse (estimate DSD from sound).</p>
+<p><strong>Results:</strong> Tested on several dozen rainfall events over six months, the ARA algorithm gives <strong>excellent estimates of rainfall rate, accumulation, and radar reflectivity</strong>, and resolves DSD variations at 5–10 s temporal resolution.</p>
+<p><strong>Inference:</strong> The rain-sound spectrum is a linear superposition of drop-size-specific signatures — sound carries not just intensity but full microphysics. Intensity regression from audio has a solid physical basis.</p>
+<p><strong>How it supports this project:</strong> The physical foundation of the whole idea: it proves the audio→rainfall mapping is causal, not correlational, and suggests a stretch goal (DSD estimation from air-side audio). It also motivates spectral features that align with drop-size-specific frequency bands.</p>
+<hr />
+<h4 id="a9-nystuen-1999--relative-performance-of-automatic-rain-gauges-under-different-rainfall-conditions--jtech-161025-doi-1011751520-042619990161025rpoarg20co2">A9. Nystuen (1999) — <em>Relative Performance of Automatic Rain Gauges under Different Rainfall Conditions</em> — JTECH 16:1025, DOI 10.1175/1520-0426(1999)016&lt;1025:RPOARG&gt;2.0.CO;2<a class="headerlink" href="#a9-nystuen-1999--relative-performance-of-automatic-rain-gauges-under-different-rainfall-conditions--jtech-161025-doi-1011751520-042619990161025rpoarg20co2" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>research papers\atot-1520-0426_1999_016_1025_rpoarg_2_0_co_2.pdf</code>, plus named copies in <code>research papers\</code> and <code>Category 1\</code></p>
+<p><strong>What they do:</strong> Deploy six automatic gauge types side by side for 17 months in Miami (~800 events): tipping bucket, weighing, capacitance, optical, disdrometer, and an acoustic sensor, and compare them across stratiform, convective, tropical-storm, light and extreme rain.</p>
+<p><strong>Results:</strong> All gauges intercorrelate ≥ ~0.9 at 1-min rates with biases &lt; 10%, <strong>but every type fails somewhere</strong>: at &gt;100 mm/h the disdrometer and tipping bucket bias low and the optical gauge biases high; at &lt;2 mm/h capacitance and tipping bucket are noise-dominated at 1-min sampling; the acoustic gauge is very sensitive to drops &gt;3.5 mm (they acoustically mask smaller drops); above 5 m/s wind, disdrometer and acoustic gauges bias low.</p>
+<p><strong>Inference:</strong> Ground truth is not absolute — the tipping-bucket labels this project trains on carry known, condition-dependent biases (low at extreme rates, noisy at drizzle, wind-affected). Part of any model's residual error is label error.</p>
+<p><strong>How it supports this project:</strong> (1) Quantifies expected label noise in the project's tipping-bucket ground truth, informing realistic accuracy ceilings and error analysis by intensity band. (2) The documented failure of acoustic sensing under large drops and high wind tells the project exactly which regimes need targeted features/data. (3) Supports the handbook's claim that gauge undercatch in wind is a literature-established problem.</p>
+<hr />
+<h4 id="a10-ma--nystuen-2005--passive-acoustic-detection-and-measurement-of-rainfall-at-sea--jtech-221225-doi-101175jtech17731">A10. Ma &amp; Nystuen (2005) — <em>Passive Acoustic Detection and Measurement of Rainfall at Sea</em> — JTECH 22:1225, DOI 10.1175/JTECH1773.1<a class="headerlink" href="#a10-ma--nystuen-2005--passive-acoustic-detection-and-measurement-of-rainfall-at-sea--jtech-221225-doi-101175jtech17731" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\atot-jtech1773_1.pdf</code> (+ duplicate)</p>
+<p><strong>What they do:</strong> Turn moored hydrophones on the TAO array (90+ buoy-months) into calibrated "Acoustic Rain Gauges": use the universal wind-generated sound spectrum for <strong>absolute self-calibration</strong> of each hydrophone, apply an acoustic discrimination step to isolate rain vs wind vs noise, then fit a <strong>single-frequency rainfall-rate algorithm</strong> validated against R.M. Young siphon gauges and TRMM satellite product 3B42.</p>
+<p><strong>Results:</strong> Acoustic rainfall accumulations match collocated gauges and TRMM at time scales from hours to a year; the discrimination + single-frequency algorithm transfers to two other ocean sites.</p>
+<p><strong>Inference:</strong> (1) A classify-first, then-regress pipeline (their discrimination → quantification) is the proven architecture — the same two-stage structure this project uses. (2) Self-calibration against a universal reference signal solves cross-sensor variation.</p>
+<p><strong>How it supports this project:</strong> Precedent for the detection→regression cascade, and the wind-based self-calibration idea maps onto this project's multi-campaign problem: cross-campaign microphone/gain differences could similarly be normalized against a universal ambient reference rather than per-clip peak normalization (which the project already found harmful and removed).</p>
+<hr />
+<h3 id="tier-b--supporting-physics-and-meteorological-feature-papers">TIER B — Supporting physics and meteorological-feature papers<a class="headerlink" href="#tier-b--supporting-physics-and-meteorological-feature-papers" title="Permanent link">¶</a></h3>
+<hr />
+<h4 id="b1-joss--waldvogel-1969--raindrop-size-distribution-and-sampling-size-errors--j-atmos-sci-26566569-scanned">B1. Joss &amp; Waldvogel (1969) — <em>Raindrop Size Distribution and Sampling Size Errors</em> — J. Atmos. Sci. 26:566–569 (scanned)<a class="headerlink" href="#b1-joss--waldvogel-1969--raindrop-size-distribution-and-sampling-size-errors--j-atmos-sci-26566569-scanned" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\RaindropSizeDist......JASMay1969.pdf</code></p>
+<p><strong>What they do:</strong> Derive, assuming an exponential DSD (Marshall–Palmer) with Poisson-distributed drop counts, the theoretical standard deviation of rain rate R and radar reflectivity Z computed from finite drop samples.</p>
+<p><strong>Results:</strong> Small samples give badly noisy R and Z: e.g., at 1 mm/h, ~1 m² of collecting surface exposed for 1 s is needed for Z to be within 20% of its mean with 68% probability. Sampling error alone explains much apparent Z–R variability.</p>
+<p><strong>Inference:</strong> Any short-window rainfall estimate — including a 10-second audio clip vs a 0.2 mm-per-tip bucket — has an irreducible statistical variance floor from counting a finite number of drops.</p>
+<p><strong>How it supports this project:</strong> Explains a structural part of the project's residual error: a tipping bucket integrates discretely (one tip ≈ 0.2 mm) while clips are 10 s, so light-rain labels are quantized and sampling-noisy. Justifies temporal aggregation choices and why per-clip R² saturates; useful citation when defending the realistic-data R² against SARID's curated number.</p>
+<hr />
+<h4 id="b2-manandhar-dev-lee-winkler--meng-2018--systematic-study-of-weather-variables-for-rainfall-detection--arxiv180501957">B2. Manandhar, Dev, Lee, Winkler &amp; Meng (2018) — <em>Systematic Study of Weather Variables for Rainfall Detection</em> — arXiv:1805.01957<a class="headerlink" href="#b2-manandhar-dev-lee-winkler--meng-2018--systematic-study-of-weather-variables-for-rainfall-detection--arxiv180501957" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\1805.01957v1.pdf</code></p>
+<p><strong>What they do:</strong> PCA on 7 weather/time variables (relative humidity, solar radiation, temperature, dew point, GPS-derived precipitable water vapor, day-of-year, time-of-day) from a Singapore weather station, then use leading principal components to separate rain vs no-rain.</p>
+<p><strong>Results:</strong> Four principal components explain 85% of variance; the first two PCs already separate rain/no-rain scenarios; all 7 variables contribute comparably to rainfall detection.</p>
+<p><strong>Inference:</strong> Cheap scalar weather variables carry real rain/no-rain signal but are largely redundant with each other — a few components suffice.</p>
+<p><strong>How it supports this project:</strong> If the deployment adds any weather sensing, this tells the project which handful of auxiliary features add detection skill (humidity, solar, temperature/dew-point spread) and that they should be compressed/decorrelated. Useful for the detection track, especially for suppressing false positives in dry, noisy clips.</p>
+<hr />
+<h4 id="b3-pathan-wu-lee-yan--dev-2021--analyzing-the-impact-of-meteorological-parameters-on-rainfall-prediction--arxiv211011059">B3. Pathan, Wu, Lee, Yan &amp; Dev (2021) — <em>Analyzing the Impact of Meteorological Parameters on Rainfall Prediction</em> — arXiv:2110.11059<a class="headerlink" href="#b3-pathan-wu-lee-yan--dev-2021--analyzing-the-impact-of-meteorological-parameters-on-rainfall-prediction--arxiv211011059" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\2110.11059v1.pdf</code></p>
+<p><strong>What they do:</strong> Correlation analysis + ML-based feature selection on 5 years of NOAA station data (Michigan, USA) to rank meteorological features (wind speeds/directions, temperatures) by importance for rainfall prediction.</p>
+<p><strong>Results:</strong> Wind-related features correlate positively with precipitation (r ≈ 0.24–0.26 for fastest-wind and average-wind features) and rank among the most important features for rainfall prediction.</p>
+<p><strong>Inference:</strong> Wind is not just a nuisance for gauges — it is itself informative about precipitation occurrence.</p>
+<p><strong>How it supports this project:</strong> Reinforces the project's decision that wind speed is the next feature to add: wind both confounds the acoustic signal (Dunkerley, Nystuen) <em>and</em> carries predictive signal about rain itself. Directly supports the planned wind-augmented models.</p>
+<hr />
+<h4 id="b4-liu-li-shang-tang--zhang-2021--measurement-of-underwater-acoustic-energy-radiated-by-single-raindrops--sensors-212687-doi-103390s21082687">B4. Liu, Li, Shang, Tang &amp; Zhang (2021) — <em>Measurement of Underwater Acoustic Energy Radiated by Single Raindrops</em> — Sensors 21:2687, DOI 10.3390/s21082687<a class="headerlink" href="#b4-liu-li-shang-tang--zhang-2021--measurement-of-underwater-acoustic-energy-radiated-by-single-raindrops--sensors-212687-doi-103390s21082687" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>Category 1\sensors-21-02687.pdf</code></p>
+<p><strong>What they do:</strong> Derive a dipole-radiation formula for the underwater sound energy of a single raindrop and measure it in a reverberation tank across drop sizes, building a model of kinetic→acoustic energy conversion efficiency.</p>
+<p><strong>Results:</strong> A predictive model for the average radiated sound energy of a raindrop of any diameter; total rainfall sound energy can then be predicted from the DSD.</p>
+<p><strong>Inference:</strong> Acoustic energy scales with drop size/kinetic energy in a quantifiable way — the physical link between "louder" and "heavier rain" is monotonic but drop-size dependent, not a simple function of rain rate alone.</p>
+<p><strong>How it supports this project:</strong> Grounds the intensity-regression idea in drop physics and explains why energy-type features (RMS, band energies) are strong but imperfect predictors: two rains with equal rate but different DSDs sound different. Motivates spectral-shape features alongside energy features.</p>
+<hr />
+<h4 id="b5-green-ostafichuk--rogak-2001--measurement-of-three-dimensional-unsteady-flows-using-an-inexpensive-multiple-disk-probe--jtech-18883">B5. Green, Ostafichuk &amp; Rogak (2001) — <em>Measurement of Three-Dimensional Unsteady Flows Using an Inexpensive Multiple Disk Probe</em> — JTECH 18:883<a class="headerlink" href="#b5-green-ostafichuk--rogak-2001--measurement-of-three-dimensional-unsteady-flows-using-an-inexpensive-multiple-disk-probe--jtech-18883" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>Category 1\atot-1520-0426_2001_018_0883_motduf_2_0_co_2.pdf</code></p>
+<p><strong>What they do:</strong> Develop and field-test a cheap velocimeter made of three orthogonal disks with pressure transducers that measures all three wind velocity components even in highly 3-D flows, unlike yaw-head/five-hole probes.</p>
+<p><strong>Results:</strong> Flat frequency response to 3–4 Hz; velocity magnitude accuracy better than ±0.3 m/s in field/wind-tunnel trials — adequate for many meteorological uses at a fraction of sonic-anemometer cost.</p>
+<p><strong>Inference:</strong> Research-grade wind measurement can be had cheaply and robustly (no moving parts).</p>
+<p><strong>How it supports this project:</strong> A candidate low-cost wind sensor for the planned wind-speed data channel at deployment sites, consistent with the project's low-cost-sensor philosophy.</p>
+<hr />
+<h4 id="b6-siloko--uddin-2023--a-statistical-study-of-wind-speed-and-its-connectivity-with-relative-humidity-and-temperature--science-world-j-183-doi-104314swjv18i313">B6. Siloko &amp; Uddin (2023) — <em>A Statistical Study of Wind Speed and its Connectivity with Relative Humidity and Temperature</em> — Science World J. 18(3), DOI 10.4314/swj.v18i3.13<a class="headerlink" href="#b6-siloko--uddin-2023--a-statistical-study-of-wind-speed-and-its-connectivity-with-relative-humidity-and-temperature--science-world-j-183-doi-104314swjv18i313" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>Category 1\scienceworld,+Vol+18(3)+pp+404-413+Siloko+et+al.pdf</code></p>
+<p><strong>What they do:</strong> Kernel-density (Gaussian) analysis of five years (2018–2022) of wind speed in Ughelli, Nigeria, and its correlation with relative humidity and temperature (AMISE performance measure, Pearson tests).</p>
+<p><strong>Results:</strong> Wind–temperature correlation is consistently negative (hotter → calmer); wind–humidity correlation flips sign across years.</p>
+<p><strong>Inference:</strong> Wind statistics are site- and season-specific; relationships between wind and other weather variables cannot be assumed stable across deployments.</p>
+<p><strong>How it supports this project:</strong> Marginal, background-level relevance: a caution that any wind-related feature or correction learned in one campaign/climate may not transfer to another — an argument for campaign-aware validation splits (which the project already uses).</p>
+<hr />
+<h3 id="tier-e--newly-added-papers-2026-07-15-batch-gauge-error-correction--sampling-uncertainty">TIER E — Newly added papers (2026-07-15 batch): gauge error correction &amp; sampling uncertainty<a class="headerlink" href="#tier-e--newly-added-papers-2026-07-15-batch-gauge-error-correction--sampling-uncertainty" title="Permanent link">¶</a></h3>
+<p>These 8 files arrived with auto-download filenames truncated to ~40 characters (e.g. <code>Rainfall_and_sampling_uncertainties_A_ra.pdf</code>). All have been identified, analyzed below, and <strong>renamed</strong> to the library's <code>YYYY - Title.pdf</code> convention (see Section 6 for the exact rename log). None turned out to be duplicates of existing library content, except two that were exact copies of each other and have been merged into one file.</p>
+<hr />
+<h4 id="e1-habib-krajewski-nespor--kruger-1999--numerical-simulation-studies-of-rain-gage-data-correction-due-to-wind-effect--j-geophys-res-104d161972319733">E1. Habib, Krajewski, Nespor &amp; Kruger (1999) — <em>Numerical simulation studies of rain gage data correction due to wind effect</em> — J. Geophys. Res. 104(D16):19,723–19,733<a class="headerlink" href="#e1-habib-krajewski-nespor--kruger-1999--numerical-simulation-studies-of-rain-gage-data-correction-due-to-wind-effect--j-geophys-res-104d161972319733" title="Permanent link">¶</a></h4>
+<p><strong>File (renamed):</strong> <code>1999 - Numerical simulation studies of rain gage data correction due to wind effect.pdf</code></p>
+<p><strong>What they do:</strong> Use CFD-derived wind-flow-around-gage correction formulae (building on Nespor &amp; Sevruk's numerical model) combined with high-temporal-resolution rainfall and wind speed measurements to correct rain gage data, specifically investigating how the choice of <em>temporal averaging scale</em> affects the estimated wind-induced bias.</p>
+<p><strong>Results:</strong> Applying the wind correction at short timescales (down to 1 minute) is essential — averaging over longer periods before correcting causes a <strong>significant overestimation</strong> of the wind-induced bias. The wind-induced error is a nonlinear function of wind speed, rain rate, <em>and</em> the drop-size-distribution parameter; correction factors expressed only as a function of wind speed (ignoring DSD) show large random scatter versus literature formulae.</p>
+<p><strong>Inference:</strong> A wind correction applied at coarse time resolution is actively harmful, not just imprecise — it systematically overstates the bias. And wind speed alone is an incomplete correction variable; DSD-awareness matters.</p>
+<p><strong>How it supports this project:</strong> Directly informs <em>how</em> to add a wind channel to the model: any wind-based correction/feature must operate at the project's native short-clip resolution (seconds, not minutes) to avoid introducing bias rather than removing it, and a simple wind-speed feature alone may underperform without some proxy for drop-size distribution (which the acoustic spectrum itself may supply, per Nystuen 1996 and Liu et al. 2021).</p>
+<hr />
+<h4 id="e2-ungersböck-rubel-fuchs--rudolf-2001--bias-correction-of-global-daily-rain-gauge-measurements--phys-chem-earth-26411414">E2. Ungersböck, Rubel, Fuchs &amp; Rudolf (2001) — <em>Bias correction of global daily rain gauge measurements</em> — Phys. Chem. Earth 26:411–414<a class="headerlink" href="#e2-ungersböck-rubel-fuchs--rudolf-2001--bias-correction-of-global-daily-rain-gauge-measurements--phys-chem-earth-26411414" title="Permanent link">¶</a></h4>
+<p><strong>File (renamed):</strong> <code>2001 - Bias correction of global daily rain gauge measurements.pdf</code></p>
+<p><strong>What they do:</strong> Develop a statistical model (built for BALTEX, adapted for the GPCC) that corrects <em>daily</em> rain-gauge measurement bias, as opposed to the monthly-only correction factors previously used operationally, and validate it against 2 years of data across four GEWEX continental-scale regions (Europe, Asia, South America, North America).</p>
+<p><strong>Results:</strong> Daily-resolution correction factors roughly match the established monthly Legates (1987) corrections in Europe during summer, but diverge substantially elsewhere: Legates over-corrects snow (up to 50% higher) and over-corrects in the Asia/South-America regions (50–100% higher), while matching closely in North America.</p>
+<p><strong>Inference:</strong> Gauge correction factors are not universal — they vary by region, season, and precipitation phase, and coarse (monthly) corrections can be badly wrong for individual days.</p>
+<p><strong>How it supports this project:</strong> Reinforces (alongside E1) that any systematic correction to the tipping-bucket ground truth must be applied at fine temporal and regional granularity, not as a single global constant — consistent with this project's existing campaign-aware treatment of its 19 field deployments.</p>
+<hr />
+<h4 id="e3-maksimović-bušek--petrović-1991--corrections-of-rainfall-data-obtained-by-tipping-bucket-rain-gauge--atmos-res-274553">E3. Maksimović, Bušek &amp; Petrović (1991) — <em>Corrections of rainfall data obtained by tipping bucket rain gauge</em> — Atmos. Res. 27:45–53<a class="headerlink" href="#e3-maksimović-bušek--petrović-1991--corrections-of-rainfall-data-obtained-by-tipping-bucket-rain-gauge--atmos-res-274553" title="Permanent link">¶</a></h4>
+<p><strong>File (renamed):</strong> <code>1991 - Corrections of rainfall data obtained by tipping bucket rain gauge.pdf</code></p>
+<p><strong>What they do:</strong> Laboratory- and field-test a Rimco R/TBR-8 tipping-bucket gauge to characterize three specific instrument imperfections: (1) <strong>non-linearity</strong> — the volume dispensed per tip is itself a function of rainfall intensity; (2) <strong>"double tipping"</strong> after successive single tips, caused by a mismatch between bucket volume and the siphon-controller's dispensed volume; (3) sensitivity of both effects to the bucket's screw-adjusted "calibration volume."</p>
+<p><strong>Results:</strong> Presents a full experimental correction methodology so raw tips recorded in real storms can be corrected for these non-linear, intensity-dependent effects.</p>
+<p><strong>Inference:</strong> The mm-per-tip conversion is not a constant even within a single gauge — it depends on the current rain intensity in a documented, correctable way, and errors compound at high intensity (more successive tips → more chances for double-tipping).</p>
+<p><strong>How it supports this project:</strong> A second, earlier, independent confirmation (alongside Prakosa et al., Tier C1) that tipping-bucket ground truth carries intensity-dependent systematic error — this is now corroborated by two separate studies 27 years apart, strengthening the case for treating gauge labels as noisy, particularly at high rain rates where this project's model already underperforms.</p>
+<hr />
+<h4 id="e4-villarini-mandapaka-krajewski--moore-2008--rainfall-and-sampling-uncertainties-a-rain-gauge-perspective--j-geophys-res-113d11102">E4. Villarini, Mandapaka, Krajewski &amp; Moore (2008) — <em>Rainfall and sampling uncertainties: A rain gauge perspective</em> — J. Geophys. Res. 113:D11102<a class="headerlink" href="#e4-villarini-mandapaka-krajewski--moore-2008--rainfall-and-sampling-uncertainties-a-rain-gauge-perspective--j-geophys-res-113d11102" title="Permanent link">¶</a></h4>
+<p><strong>File (renamed):</strong> <code>2008 - Rainfall and sampling uncertainties A rain gauge perspective.pdf</code></p>
+<p><strong>What they do:</strong> Using 6+ years of data from a dense 50-gauge network over 135 km² (Brue catchment, England), characterize two distinct error types relevant to remote-sensing/point-sensor comparison: <strong>temporal sampling uncertainty</strong> (from gaps in observation, e.g. infrequent satellite/radar overpasses) and <strong>spatial sampling uncertainty</strong> (from using a point measurement to represent an areal estimate).</p>
+<p><strong>Results:</strong> Temporal sampling uncertainty grows with the sampling interval following a scaling law and shrinks with larger averaging area (with no strong orography dependence); spatial sampling uncertainty shrinks with longer accumulation time. They also derive a practical rule for how many gauges are needed to estimate areal rainfall to a given accuracy, useful for validating high-resolution satellite products.</p>
+<p><strong>Inference:</strong> Any comparison between a point sensor (a tipping bucket, or a single microphone) and an areal ground truth carries an intrinsic, quantifiable representativeness error separate from instrument error.</p>
+<p><strong>How it supports this project:</strong> Provides the vocabulary and quantitative framework for a limitation this project already faces implicitly: a single microphone (like a single gauge) is a point measurement, and comparing it to a nearby but not co-located gauge, or extrapolating results to "area coverage" claims, carries this exact spatial-sampling uncertainty — worth citing when the handbook discusses the dense-network value proposition.</p>
+<hr />
+<h4 id="e5-steiner-smith-uijlenhoet--hou-nd-19992000--rainfall-variability-and-its-effect-on-rainfall-measurements--ams-conference-preprint-paper-p141">E5. Steiner, Smith, Uijlenhoet &amp; Hou (n.d., ~1999–2000) — <em>Rainfall Variability and its Effect on Rainfall Measurements</em> — AMS conference preprint, paper P14.1<a class="headerlink" href="#e5-steiner-smith-uijlenhoet--hou-nd-19992000--rainfall-variability-and-its-effect-on-rainfall-measurements--ams-conference-preprint-paper-p141" title="Permanent link">¶</a></h4>
+<p><strong>File (renamed):</strong> <code>n.d. - Rainfall variability and its effect on rainfall measurements.pdf</code></p>
+<p><strong>What they do:</strong> Analyze 30 storms (1996–1997, ~785 mm total) over the densely-instrumented Goodwin Creek watershed (Mississippi) with extensive QC of radar, rain gauge, disdrometer, and lightning data, storm-cell tracking, and sensitivity analysis, to answer: how much of the observed difference between radar-estimated and gauge-measured rainfall is explained by sensor resolution differences versus genuine small-scale rainfall variability, rather than instrument error?</p>
+<p><strong>Results:</strong> Emphasizes that high-quality rain gauge data is essential for radar bias-adjustment — questionable gauge data can dramatically distort radar-gauge merged rainfall products — and that a meaningful share of radar-vs-gauge disagreement is attributable to genuine spatiotemporal rainfall variability rather than either instrument being "wrong."</p>
+<p><strong>Inference:</strong> Disagreement between two well-functioning rainfall instruments does not automatically mean one is broken — some of it is the real, physical small-scale variability of rain itself.</p>
+<p><strong>How it supports this project:</strong> Directly relevant caution for evaluating the acoustic-gauge-vs-tipping-bucket comparison: some fraction of this project's residual error should be attributed to genuine micro-scale rainfall variability between what the microphone "hears" locally and what the (possibly non-co-located) gauge collects, not solely to model inaccuracy.</p>
+<hr />
+<h4 id="e6-kochendorfer-rasmussen-wolff-et-al-2017--the-quantification-and-correction-of-wind-induced-precipitation-measurement-errors--hydrol-earth-syst-sci-2119731989">E6. Kochendorfer, Rasmussen, Wolff et al. (2017) — <em>The quantification and correction of wind-induced precipitation measurement errors</em> — Hydrol. Earth Syst. Sci. 21:1973–1989<a class="headerlink" href="#e6-kochendorfer-rasmussen-wolff-et-al-2017--the-quantification-and-correction-of-wind-induced-precipitation-measurement-errors--hydrol-earth-syst-sci-2119731989" title="Permanent link">¶</a></h4>
+<p><strong>File (renamed):</strong> <code>2017 - The quantification and correction of wind-induced precipitation measurement errors.pdf</code></p>
+<p><strong>What they do:</strong> A large multi-author NOAA/NCAR/Norwegian-Met-Institute study using two precipitation testbeds (WMO-SPICE-affiliated) to quantify wind-induced undercatch for unshielded weighing gauges and gauges with four common windshields (including single-Alter), then derive and cross-validate correction functions using only wind speed and air temperature as inputs.</p>
+<p><strong>Results:</strong> An unshielded gauge can catch <strong>under 50% of actual solid precipitation</strong> at wind speeds over 5 m/s. A single correction function developed for single-Alter-shielded gauges, tested at two independent sites (US and Norway), reduced bias from <strong>−12% to 0%</strong> at the US site and from <strong>−27% to −4%</strong> at the Norwegian site.</p>
+<p><strong>Inference:</strong> Wind-induced undercatch is large (up to 50%+ in solid precip, and non-trivial in liquid rain too) but is well-characterized and correctable with just two cheap, ubiquitous inputs (wind speed, temperature), and the correction transfers reasonably well across very different climates.</p>
+<p><strong>How it supports this project:</strong> The single strongest piece of quantitative evidence in the whole library for prioritizing wind speed as this project's "next lever" (as the handbook already concludes): it shows a <strong>large, well-characterized, and transferable</strong> bias exists, with a simple, cheap, two-input correction function as precedent for how a wind-augmented version of this project's model could be structured.</p>
+<hr />
+<h4 id="e7-lee--zawadzki-2005--variability-of-drop-size-distributions-time-scale-dependence-of-the-variability-and-its-effects-on-rain-estimation--j-appl-meteor-44241255-mcgill-university">E7. Lee &amp; Zawadzki (2005) — <em>Variability of Drop Size Distributions: Time-Scale Dependence of the Variability and Its Effects on Rain Estimation</em> — J. Appl. Meteor. 44:241–255 (McGill University)<a class="headerlink" href="#e7-lee--zawadzki-2005--variability-of-drop-size-distributions-time-scale-dependence-of-the-variability-and-its-effects-on-rain-estimation--j-appl-meteor-44241255-mcgill-university" title="Permanent link">¶</a></h4>
+<p><strong>File (renamed):</strong> <code>2005 - Variability of Drop Size Distributions Time-Scale Dependence of the Variability and Its Effects on Rain Estimation.pdf</code></p>
+<p><strong>What they do:</strong> Analyze 5 years (20,000+ one-minute DSDs) of disdrometer data from Montreal to quantify how drop-size-distribution variability, at multiple time scales (climatological, day-to-day, within-day, between physical processes), biases radar rain-rate (R) estimation from reflectivity (Z), classifying DSDs by the vertical radar-profiler structure of the associated physical process.</p>
+<p><strong>Results:</strong> Using a single climatological R–Z relationship gives ~<strong>41% random error</strong> in instantaneous rain rate; this error shrinks with longer integration time but plateaus beyond ~2 hours. Daily accumulations using the climatological relationship carry a <strong>28% bias</strong> from day-to-day DSD variability; even <em>daily</em> R–Z relationships still leave 32% random error from within-day variability. The DSD variability <em>between different physical processes</em> (e.g., stratiform vs. convective) is larger than day-to-day variability and alone causes a 41% accumulation bias — accurate estimation (~7% error) is only achievable once the correct underlying physical process is identified.</p>
+<p><strong>Inference:</strong> A single, static mapping (whether R–Z for radar or, by direct analogy, audio-features→intensity for this project) has an irreducible ~30–40% error ceiling unless it is conditioned on the type of rain event (its underlying physical process / DSD regime), not just its current intensity.</p>
+<p><strong>How it supports this project:</strong> Perhaps the most important physics paper in this update for model design: it is strong, quantitative, independent evidence that a <em>single</em> audio→intensity regression function is fundamentally limited by unmodeled DSD/rain-type variability, and that <strong>conditioning the model on rain "regime"</strong> (e.g., via a learned or explicit classification of storm type, akin to distinguishing convective vs. stratiform) could meaningfully reduce error — a concrete, literature-backed architectural idea (mixture-of-experts / regime-conditioned regression) worth prototyping against the project's stagnant 0.531 R².</p>
+<hr />
+<h3 id="tier-c--instrumentation-calibration-and-standards-context">TIER C — Instrumentation, calibration, and standards context<a class="headerlink" href="#tier-c--instrumentation-calibration-and-standards-context" title="Permanent link">¶</a></h3>
+<hr />
+<h4 id="c1-prakosa-wijonarko--rustandi-2018--the-performance-measurement-test-on-rain-gauge-of-tipping-bucket-due-to-controlling-of-the-water-flow-rate--elconrus-2018-pp-11361140">C1. Prakosa, Wijonarko &amp; Rustandi (2018) — <em>The Performance Measurement Test on Rain Gauge of Tipping Bucket due to Controlling of the Water Flow Rate</em> — ElConRus 2018, pp. 1136–1140<a class="headerlink" href="#c1-prakosa-wijonarko--rustandi-2018--the-performance-measurement-test-on-rain-gauge-of-tipping-bucket-due-to-controlling-of-the-water-flow-rate--elconrus-2018-pp-11361140" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\Paper_RainGaugeTippingBucketIEEE.pdf</code> (the PDF is a proceedings extract; the paper is at PDF pages 30–34)</p>
+<p><strong>What they do:</strong> Laboratory-test tipping-bucket repeatability by feeding controlled water flow rates (24–100 ml/min) via a microcontroller-PWM-controlled pump and counting tips.</p>
+<p><strong>Results:</strong> Volume-per-tip varied between series — (18.93±0.60), (17.89±0.92), (17.80±0.60) ml/tip, average 18.21±1.25 ml/tip (~7% spread) — showing flow rate significantly affects tipping-bucket calibration.</p>
+<p><strong>Inference:</strong> The mm-per-tip "constant" of a tipping bucket is intensity-dependent; the ground-truth conversion factor drifts a few percent with rain rate.</p>
+<p><strong>How it supports this project:</strong> Another quantified source of label error in the project's ground truth: intensity-dependent tip calibration adds systematic bias precisely at the high intensities where the model already struggles. Supports considering dynamic calibration corrections on the gauge labels.</p>
+<hr />
+<h4 id="c2-kou-liu-li-qin--liu-2026--ai-methods-in-sensor-calibration-review--sensors-262805-doi-103390s26092805">C2. Kou, Liu, Li, Qin &amp; Liu (2026) — <em>AI Methods in Sensor Calibration</em> (review) — Sensors 26:2805, DOI 10.3390/s26092805<a class="headerlink" href="#c2-kou-liu-li-qin--liu-2026--ai-methods-in-sensor-calibration-review--sensors-262805-doi-103390s26092805" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\AI_Methods_in_Sensor_Calibration.pdf</code></p>
+<p><strong>What they do:</strong> Review how AI models replace polynomial transfer-function fitting in sensor calibration: learning input→output mappings, compensating temperature/humidity/drift interference, and enabling large-scale low-cost sensor fleets, plus supporting tools (preprocessing, training optimization, data augmentation).</p>
+<p><strong>Results:</strong> Across many sensor types, AI calibration consistently beats preset empirical models on accuracy and stability, especially for nonlinear transfer functions and environmental compensation; open challenges include generalization and long-term drift.</p>
+<p><strong>Inference:</strong> This project <em>is</em> an instance of AI sensor calibration — the microphone is the raw sensor, the ML model is its learned transfer function to mm/h, and cross-campaign/environmental compensation is the hard part the review says AI handles best.</p>
+<p><strong>How it supports this project:</strong> Framing and technique source: positions the project inside an established methodology (useful for the paper's related-work section), and its catalog of interference-compensation and augmentation techniques is a menu for improving cross-campaign robustness.</p>
+<hr />
+<h4 id="c3-wmo-2008--guide-to-meteorological-instruments-and-methods-of-observation-wmo-no-8-7th-ed">C3. WMO (2008) — <em>Guide to Meteorological Instruments and Methods of Observation</em>, WMO-No. 8, 7th ed.<a class="headerlink" href="#c3-wmo-2008--guide-to-meteorological-instruments-and-methods-of-observation-wmo-no-8-7th-ed" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>Category 1\CWOP-WMO8.pdf</code> (681 pages; CWOP-distributed copy)</p>
+<p><strong>What it is:</strong> The world-standard reference on how precipitation (and every other meteorological variable) must be measured: siting, exposure, gauge types, uncertainty requirements, and QC procedures.</p>
+<p><strong>Results/content relevant here:</strong> Defines the accuracy classes and siting/exposure rules that official rain measurements follow, including wind-induced undercatch corrections for gauges.</p>
+<p><strong>Inference:</strong> Any claim that an acoustic gauge "matches" official measurement quality must be phrased against WMO-No. 8 requirements.</p>
+<p><strong>How it supports this project:</strong> The compliance yardstick: use it to specify target uncertainty for the acoustic gauge, to justify ground-truth siting decisions in field campaigns, and to cite standard undercatch corrections when adjusting tipping-bucket labels for wind.</p>
+<hr />
+<h4 id="c4-rhd-acoustic-rain-disdrometer--hail-sensor--commercial-datasheet-not-a-research-paper">C4. RHD Acoustic Rain Disdrometer &amp; Hail Sensor — commercial datasheet (not a research paper)<a class="headerlink" href="#c4-rhd-acoustic-rain-disdrometer--hail-sensor--commercial-datasheet-not-a-research-paper" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>research papers\Rain disdrometer and hail detection.pdf</code> = <code>Category 1\Datasheet_RHD_V1_41.pdf</code> (byte-identical)</p>
+<p><strong>What it is:</strong> Datasheet for a commercial low-cost acoustic rain gauge/disdrometer: a sealed polished stainless-steel hemisphere (160 mm, 402 cm²) that senses raindrop/hailstone impacts; no moving parts, &lt;1 mA standby.</p>
+<p><strong>Key specs:</strong> Rain intensity accuracy <strong>±15%</strong> (100% duty cycle); DSD reported in <strong>27 size classes</strong> from ≤0.75 mm to ≥7.0 mm (detection threshold ~0.5 mm); hail counting to 5 impacts/s; drop velocity not measured; analog/SDI-12/RS-232/Modbus outputs.</p>
+<p><strong>Inference:</strong> Industry already sells impact-acoustic rain sensing at ±15% accuracy — but it needs a dedicated, engineered sensing surface. The commercial bar for a microphone-only ML approach is therefore ±15% intensity error.</p>
+<p><strong>How it supports this project:</strong> (1) Competitive benchmark: beating ±15% with a commodity microphone would be a headline result. (2) Proof of commercial demand for acoustic rain sensing. (3) Its 27-class DSD output shows what a mature acoustic product exposes — a target feature set for the long-term roadmap.</p>
+<hr />
+<h3 id="tier-d--off-topic-files-flagged-not-rainfall-audio-relevant">TIER D — Off-topic files (flagged; not rainfall-audio relevant)<a class="headerlink" href="#tier-d--off-topic-files-flagged-not-rainfall-audio-relevant" title="Permanent link">¶</a></h3>
+<hr />
+<h4 id="d1-mohammadi-et-al-2020--a-multi-sensor-comparative-analysis-on-the-suitability-of-generated-dem-from-sentinel-1-sar-interferometry--sensors-207214">D1. Mohammadi et al. (2020) — <em>A Multi-Sensor Comparative Analysis on the Suitability of Generated DEM from Sentinel-1 SAR Interferometry</em> — Sensors 20:7214<a class="headerlink" href="#d1-mohammadi-et-al-2020--a-multi-sensor-comparative-analysis-on-the-suitability-of-generated-dem-from-sentinel-1-sar-interferometry--sensors-207214" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>research papers\sensors-20-07214.pdf</code> (= the two <code>n.d. - A Multi-Sensor Comparative Analysis...</code> copies)</p>
+<p><strong>What they do / results:</strong> Generate a DEM from Sentinel-1 InSAR for sites in Malaysia and Iran and compare against AIRSAR, ALOS-PALSAR, TanDEM-X, SRTM; Sentinel-1 DEM turns out noisy (short perpendicular baseline) and <strong>worse than SRTM/TanDEM-X</strong> despite finer nominal resolution.</p>
+<p><strong>Relevance:</strong> None to acoustic rainfall sensing. Likely collected for general hydrology background. <strong>Recommend moving out of the rainfall library</strong> (or into a "hydrology-misc" folder) so it doesn't pollute searches.</p>
+<hr />
+<h4 id="d2-kurşun-güven--ersoy-2022--utilizing-piezo-acoustic-sensors-for-the-identification-of-surface-roughness-and-textures--sensors-224381">D2. Kurşun, Güven &amp; Ersoy (2022) — <em>Utilizing Piezo Acoustic Sensors for the Identification of Surface Roughness and Textures</em> — Sensors 22:4381<a class="headerlink" href="#d2-kurşun-güven--ersoy-2022--utilizing-piezo-acoustic-sensors-for-the-identification-of-surface-roughness-and-textures--sensors-224381" title="Permanent link">¶</a></h4>
+<p><strong>Files:</strong> <code>research papers\sensors-22-04381.pdf</code> (= <code>n.d. - Utilizing Piezo Acoustic Sensors...</code>)</p>
+<p><strong>What they do / results:</strong> Correlate frequency spectra from piezo disks (elastic waves from a diamond stylus dragged on metal) with profilometer surface-roughness parameters (Ra, Rz); spectra correlate clearly with roughness — a promising novel roughness measurement.</p>
+<p><strong>Relevance:</strong> Tangential. It is manufacturing metrology, not meteorology — but it independently demonstrates the project's core signal-processing premise (impact/friction acoustics + spectral analysis ⇒ quantitative physical parameter). Keep only as methodological inspiration for piezo-based sensing surfaces.</p>
+<hr />
+<h4 id="d3-zhao-et-al-2026--a-self-powered-microsystem-with-efficient-power-management-for-continuous-wireless-sensing--microsyst-nanoeng-12178-doi-101038s41378-026-01315-z">D3. Zhao et al. (2026) — <em>A self-powered microsystem with efficient power management for continuous wireless sensing</em> — Microsyst. Nanoeng. 12:178, DOI 10.1038/s41378-026-01315-z<a class="headerlink" href="#d3-zhao-et-al-2026--a-self-powered-microsystem-with-efficient-power-management-for-continuous-wireless-sensing--microsyst-nanoeng-12178-doi-101038s41378-026-01315-z" title="Permanent link">¶</a></h4>
+<p><strong>File:</strong> <code>research papers\A_self-powered_microsystem_with_efficient_power_ma.pdf</code></p>
+<p><strong>What they do / results:</strong> Power a continuously sensing, wirelessly transmitting microsystem entirely from a triboelectric nanogenerator (TENG) harvesting &lt;10 Hz mechanical energy; custom power management fixes the TENG↔electronics impedance mismatch for a <strong>5× energy gain</strong> over full-bridge rectification, cold-start 0→4.2 V in 525 s, ~110 µW at 5 Hz excitation; demonstrated as a battery-less wireless gas monitor.</p>
+<p><strong>Relevance:</strong> Deployment engineering only: a battery-less power budget (~110 µW) is far below what continuous audio ML capture needs, but the paper (and its raindrop-TENG citations) is useful if the project ever explores energy-autonomous field nodes. Not a rainfall-estimation reference.</p>
+<hr />
+<h2 id="4-new-papers-added-and-renamed-2026-07-15">4. New papers added and renamed (2026-07-15)<a class="headerlink" href="#4-new-papers-added-and-renamed-2026-07-15" title="Permanent link">¶</a></h2>
+<p>All 8 newly added PDFs (Tier E above) were identified by content and renamed from their cryptic auto-download names to the library's <code>YYYY - Title.pdf</code> convention:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Old filename</th>
+<th>New filename</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Numerical_simulation_studies_of_rain_gag.pdf</code></td>
+<td><code>1999 - Numerical simulation studies of rain gage data correction due to wind effect.pdf</code></td>
+</tr>
+<tr>
+<td><code>Bias_correction_of_global_daily_rain_gau.pdf</code></td>
+<td><code>2001 - Bias correction of global daily rain gauge measurements.pdf</code></td>
+</tr>
+<tr>
+<td><code>Corrections_of_rainfall_data_obtained_by-2.pdf</code></td>
+<td><code>1991 - Corrections of rainfall data obtained by tipping bucket rain gauge.pdf</code></td>
+</tr>
+<tr>
+<td><code>Rainfall_and_sampling_uncertainties_A_ra.pdf</code></td>
+<td><code>2008 - Rainfall and sampling uncertainties A rain gauge perspective.pdf</code></td>
+</tr>
+<tr>
+<td><code>Rainfall_variability_and_its_effect_on_r.pdf</code> (+ byte-identical <code>-1.pdf</code>)</td>
+<td><code>n.d. - Rainfall variability and its effect on rainfall measurements.pdf</code> (one copy kept)</td>
+</tr>
+<tr>
+<td><code>The_Quantification_and_Correction_of_Win.pdf</code></td>
+<td><code>2017 - The quantification and correction of wind-induced precipitation measurement errors.pdf</code></td>
+</tr>
+<tr>
+<td><code>Variability_of_Drop_Size_Distributions_T.pdf</code> (+ byte-identical <code>-1.pdf</code>)</td>
+<td><code>2005 - Variability of Drop Size Distributions Time-Scale Dependence of the Variability and Its Effects on Rain Estimation.pdf</code> (one copy kept)</td>
+</tr>
+<tr>
+<td><code>Adjustment_of_1_min_rain_gauge_time_seri.pdf</code></td>
+<td>merged — see Section 5 (near-duplicate of an existing library file, one copy kept, old copy renamed for clarity)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="5-duplicate-cleanup--executed-2026-07-15">5. Duplicate cleanup — executed 2026-07-15<a class="headerlink" href="#5-duplicate-cleanup--executed-2026-07-15" title="Permanent link">¶</a></h2>
+<p>Every candidate below was <strong>verified before deletion</strong>: exact duplicates by MD5 byte-hash, near-duplicates by full-text similarity ratio (pypdf extraction, <code>SequenceMatcher</code>, threshold ≥0.97 required for deletion). All deleted files were sent to the <strong>Windows Recycle Bin</strong>, not permanently erased. Total: <strong>117 duplicate PDFs removed</strong>, library reduced from ~178 to <strong>172 unique PDFs</strong>. The <code>research papers\duplicates\</code> folder (which held 113 of these) is now empty and has been deleted.</p>
+<p><strong>Cross-checked/confirmed duplicate groups removed:</strong></p>
+<ul>
+<li><strong>SARID paper ×4 → 1 kept</strong>: kept <code>2024 - Estimating rainfall intensity based on surveillance audio and deep-learning.pdf</code>; deleted <code>sarid.pdf</code>, <code>1-s2.0-S2666498424000644-main.pdf</code>, and the <code>(2)</code> copy (text similarity ≥0.97 confirmed for all).</li>
+<li><strong>Çoban et al. (sound-based weather monitoring) ×3 → 1 kept</strong>: kept <code>Towards High Resolution Weather Monitoring with Sound Data.pdf</code>; deleted <code>document.pdf</code> and <code>2309.16867v1.pdf</code> (byte-identical / near-identical text).</li>
+<li><strong>Nystuen 1999 (Relative Performance of Automatic Rain Gauges) ×3 → 1 kept</strong>: kept the <code>research papers\</code> named copy; deleted <code>atot-1520-0426_1999_016_1025_rpoarg_2_0_co_2.pdf</code> and the <code>Category 1\</code> copy.</li>
+<li><strong>RHD datasheet ×2 → 1 kept</strong>: kept <code>Category 1\Datasheet_RHD_V1_41.pdf</code>; deleted <code>research papers\Rain disdrometer and hail detection.pdf</code> (byte-identical; its old name misleadingly suggested a research paper).</li>
+<li><strong>Guico et al. (novel acoustic rain sensor) ×2 → 1 kept</strong>: <code>-2.pdf</code> deleted (byte-identical to <code>-1.pdf</code>).</li>
+<li><strong>Ma/Dushaw/Howe "Rainfall at Sea" ×2 → 1 kept</strong>: <code>Category 1\</code> copy deleted (byte-identical to <code>research papers\</code> copy).</li>
+<li><strong>"Recording Rainfall Intensity" (n.d. vs 2023) ×2 → 1 kept</strong>, <strong>"Wind speed estimation..." (n.d. vs 2023) ×2 → 1 kept</strong>, <strong>"Measuring Amazon Rainfall Intensity With Sound" (n.d. vs named) ×2 → 1 kept</strong>, <strong>"Understanding the Mechanical Biases..." (2) vs base ×2 → 1 kept</strong>: all confirmed byte-identical, one copy each retained.</li>
+<li><strong>Evaluation of Numerous Kinetic Energy–Rainfall Intensity Equations ×3 → 1 kept</strong>: the <code>(2)</code> copy confirmed near-identical text (≥0.97) and deleted; the <code>(3)</code> copy was checked and found only <strong>73% similar</strong> (different page count, 17 vs 16 pp) — <strong>kept as a possibly distinct revision</strong>, not deleted (flagged for manual review).</li>
+<li><strong>Piezo Acoustic Sensors for Surface Roughness ×2 → 1 kept</strong>: <code>sensors-22-04381.pdf</code> deleted (byte-identical to the <code>n.d.</code> copy).</li>
+<li><strong>Adjustment of one-minute rain gauge time series ×4 → 2 kept (two distinct versions)</strong>: the <code>n.d.</code> copy and one of the two <code>2023</code> copies were confirmed byte/text-identical and deleted; the newly added <code>Adjustment_of_1_min_rain_gauge_time_seri.pdf</code> (9 pp, AMT <em>Discussion</em> preprint text) was confirmed <strong>99.9% identical</strong> to the existing <code>(2)</code> copy and deleted, while the surviving 13-page <code>2023 -...pdf</code> (final AMT article) was kept as-is and the discussion-preprint copy renamed <code>2023 - ...(AMT discussion preprint).pdf</code> for clarity — these are two genuinely different manuscript versions of the same paper (preprint discussion vs. final published), not accidental duplicates.</li>
+<li><strong><code>research papers\duplicates\</code> folder (113 files)</strong>: every file was matched against its corresponding outside copy — same exact-hash / near-text-identical logic — and removed, <strong>except two genuinely distinct files</strong> that were relocated instead of deleted:</li>
+<li><code>Technical_note_An_innovative_monitoring_approach_t-1.pdf</code> (17 pp) is a <strong>different, earlier version</strong> of "An innovative monitoring approach to measure spatio-temporal throughfall patterns in forests" than the 2025 22-page copy already in the library (only 28% text similarity, both are legitimate content) — moved to <code>research papers\2026 - Technical note An innovative monitoring approach to measure spatio-temporal throughfall patterns in forests (published version).pdf</code>.</li>
+<li><code>Adaptation_of_RainGaugeQC_algorithms_for_quality_c-3.pdf</code> (26 pp) is a <strong>longer, extended version</strong> of the RainGaugeQC paper than the library's existing 17-page <code>n.d.</code> copy (only 19% text similarity) — moved to <code>research papers\n.d. - Adaptation of RainGaugeQC algorithms for quality control of rain gauge data (extended 26pp version).pdf</code>. (Two other copies of this same paper inside <code>duplicates\</code>, <code>-1.pdf</code> and <code>-2.pdf</code>, <em>were</em> exact byte-matches of the existing <code>n.d.</code> copy and were deleted.)</li>
+</ul>
+<p><strong>Not touched (flagged, not deleted):</strong> the off-topic Sentinel-1 DEM paper (<code>sensors-20-07214.pdf</code> + 2 named copies, Tier D1) — these are exact/near duplicates of <em>each other</em> but are off-topic content, outside the scope of a "duplicate cleanup" pass; recommend a separate decision on whether to remove them from this library entirely.</p>
+<hr />
+<p><em>Generated by opening and reading every cryptically-named PDF in <code>ARG_Research/</code> (text extraction + page-image reading for scans), 2026-07-15. Analyses of results are taken from each paper's own abstract/results sections. Duplicate cleanup executed and logged same day; all deletions routed through the Recycle Bin.</em></p></main>
+</div>
+<footer>Acoustic Rain Gauge · generated from <a href="../RESEARCH_PAPER_ANALYSIS.md">RESEARCH_PAPER_ANALYSIS.md</a> · source of truth is the Markdown file</footer>
+<button id="topBtn" title="Back to top">↑</button>
+<script>
+(function () {
+  const root = document.documentElement;
+  const stored = localStorage.getItem('arg-docs-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const apply = (t) => {
+    root.setAttribute('data-theme', t);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  };
+  apply(stored || (prefersDark ? 'dark' : 'light'));
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('arg-docs-theme', next);
+    apply(next);
+    if (window.rerenderMermaid) window.rerenderMermaid(next);
+  });
+
+  const bar = document.getElementById('progress');
+  const topBtn = document.getElementById('topBtn');
+  addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    if (bar) bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    if (topBtn) topBtn.classList.toggle('show', h.scrollTop > 600);
+  }, { passive: true });
+  if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // scroll-spy for the TOC
+  const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+  if (links.length) {
+    const map = new Map();
+    links.forEach(a => {
+      const el = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+      if (el) map.set(el, a);
+    });
+    let current = null;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          if (current) current.classList.remove('active');
+          current = map.get(e.target);
+          if (current) {
+            current.classList.add('active');
+            current.scrollIntoView({ block: 'nearest' });
+          }
+        }
+      });
+    }, { rootMargin: '-70px 0px -70% 0px' });
+    map.forEach((_, el) => obs.observe(el));
+  }
+})();
+</script>
+
+</body>
+</html>

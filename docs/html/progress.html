@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Progress — Acoustic Rain Gauge ML · Acoustic Rain Gauge</title>
+<style>
+:root {
+  --hue: 24;
+  --bg: #f6f7fb;
+  --bg-card: #ffffff;
+  --bg-code: #eef0f6;
+  --ink: #1b2030;
+  --ink-soft: #4a5268;
+  --ink-faint: #7b8399;
+  --line: #e2e5ef;
+  --accent: hsl(var(--hue), 70%, 46%);
+  --accent-soft: hsl(var(--hue), 75%, 95%);
+  --accent-ink: hsl(var(--hue), 60%, 32%);
+  --shadow: 0 1px 3px rgba(20, 25, 45, .07), 0 8px 24px rgba(20, 25, 45, .06);
+  --radius: 14px;
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  --bg: #0e1118;
+  --bg-card: #161b26;
+  --bg-code: #1d2331;
+  --ink: #e8eaf2;
+  --ink-soft: #aab2c5;
+  --ink-faint: #6f7890;
+  --line: #262d3d;
+  --accent: hsl(var(--hue), 75%, 62%);
+  --accent-soft: hsl(var(--hue), 45%, 17%);
+  --accent-ink: hsl(var(--hue), 80%, 74%);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: 16px;
+  transition: background .25s ease, color .25s ease;
+}
+
+/* ---- progress bar ---- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, hsl(var(--hue),80%,55%), hsl(calc(var(--hue) + 60),80%,60%));
+  z-index: 100; transition: width .1s linear;
+}
+
+/* ---- header ---- */
+.site-header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 22px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.site-header .home {
+  font-weight: 700; text-decoration: none; color: var(--ink);
+  display: flex; align-items: center; gap: 8px; font-size: .95rem;
+  white-space: nowrap;
+}
+.site-header .home .dot {
+  width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  background: linear-gradient(135deg, hsl(var(--hue),75%,55%), hsl(calc(var(--hue) + 50),75%,60%));
+  font-size: 14px;
+}
+.doc-nav { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; }
+.doc-nav a {
+  text-decoration: none; color: var(--ink-soft); font-size: .82rem;
+  padding: 6px 11px; border-radius: 9px; white-space: nowrap;
+}
+.doc-nav a:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.doc-nav a.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+#themeBtn {
+  border: 1px solid var(--line); background: var(--bg-card); color: var(--ink);
+  border-radius: 9px; padding: 5px 11px; cursor: pointer; font-size: .95rem;
+  flex-shrink: 0;
+}
+#themeBtn:hover { border-color: var(--accent); }
+
+/* ---- hero ---- */
+.hero {
+  padding: 54px 26px 40px;
+  background:
+    radial-gradient(1100px 420px at 12% -10%, hsla(var(--hue), 80%, 60%, .16), transparent 60%),
+    radial-gradient(900px 380px at 88% -20%, hsla(calc(var(--hue) + 70), 80%, 60%, .12), transparent 60%);
+  border-bottom: 1px solid var(--line);
+}
+.hero-inner { max-width: 1160px; margin: 0 auto; }
+.hero .emoji { font-size: 2.4rem; }
+.hero h1 {
+  margin: 10px 0 8px; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.15;
+  letter-spacing: -.02em;
+  background: linear-gradient(100deg, var(--ink) 30%, hsl(var(--hue), 70%, 55%));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero .tagline { color: var(--ink-soft); max-width: 68ch; margin: 0 0 18px; font-size: 1.02rem; }
+.meta-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: .76rem; padding: 4px 12px; border-radius: 999px;
+  background: var(--bg-card); border: 1px solid var(--line); color: var(--ink-soft);
+  box-shadow: var(--shadow);
+}
+
+/* ---- layout ---- */
+.layout {
+  max-width: 1160px; margin: 0 auto; padding: 30px 26px 90px;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px;
+  align-items: start;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } .sidebar { display: none; } }
+
+/* ---- sidebar TOC ---- */
+.sidebar { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto; padding-right: 4px; }
+.sidebar h4 {
+  margin: 4px 0 10px; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc > ul > li > ul { padding-left: 14px; }
+.toc ul ul ul { display: none; }               /* cap depth shown */
+.toc a {
+  display: block; padding: 4px 10px; margin: 1px 0; border-left: 2px solid transparent;
+  color: var(--ink-soft); text-decoration: none; font-size: .82rem; line-height: 1.35;
+  border-radius: 0 7px 7px 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.toc a:hover { color: var(--accent-ink); background: var(--accent-soft); }
+.toc a.active { color: var(--accent-ink); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* ---- article ---- */
+.article { min-width: 0; }
+.article h1, .article h2, .article h3, .article h4 { letter-spacing: -.015em; line-height: 1.25; scroll-margin-top: 84px; }
+.article h1 { font-size: 1.75rem; margin: 2.2em 0 .6em; }
+.article h2 {
+  font-size: 1.42rem; margin: 2.4em 0 .7em; padding-bottom: .35em;
+  border-bottom: 2px solid var(--line); position: relative;
+}
+.article h2::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 64px; height: 2px;
+  background: linear-gradient(90deg, hsl(var(--hue),75%,55%), transparent);
+}
+.article h3 { font-size: 1.13rem; margin: 1.9em 0 .5em; }
+.article h4 { font-size: 1rem; margin: 1.6em 0 .4em; color: var(--ink-soft); }
+.article > :first-child { margin-top: 0; }
+.article p { margin: .85em 0; }
+.article a { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid transparent; }
+.article a:hover { border-bottom-color: var(--accent-ink); }
+.article strong { color: var(--ink); }
+.article hr { border: none; border-top: 1px solid var(--line); margin: 2.6em 0; }
+.article ul, .article ol { padding-left: 1.5em; }
+.article li { margin: .3em 0; }
+.article img { max-width: 100%; border-radius: var(--radius); }
+.headerlink { opacity: 0; margin-left: 8px; font-size: .8em; text-decoration: none; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink { opacity: .55; }
+
+/* blockquotes */
+.article blockquote {
+  margin: 1.2em 0; padding: 12px 18px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--ink-soft);
+}
+.article blockquote p { margin: .4em 0; }
+
+/* code */
+code {
+  font-family: "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  font-size: .86em; background: var(--bg-code); padding: .14em .42em;
+  border-radius: 6px; color: var(--accent-ink);
+}
+pre {
+  background: var(--bg-code); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; overflow-x: auto; line-height: 1.5; box-shadow: var(--shadow);
+}
+pre code { background: none; padding: 0; color: var(--ink); font-size: .84rem; }
+
+/* tables */
+.table-wrap {
+  overflow-x: auto; margin: 1.3em 0; border-radius: var(--radius);
+  border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--bg-card);
+}
+table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+th, td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+thead th {
+  background: var(--accent-soft); color: var(--accent-ink);
+  font-size: .74rem; letter-spacing: .07em; text-transform: uppercase;
+  position: sticky; top: 0;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+
+/* evidence badges */
+.badge {
+  display: inline-block; font-size: .66rem; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 9px; border-radius: 999px; vertical-align: middle; white-space: nowrap;
+}
+.badge-paper     { background: #dbeafe; color: #1d4ed8; }
+.badge-measured  { background: #dcfce7; color: #15803d; }
+.badge-derived   { background: #fef3c7; color: #b45309; }
+.badge-inference { background: #f3e8ff; color: #7e22ce; }
+.badge-proposal  { background: #fee2e2; color: #b91c1c; }
+html[data-theme="dark"] .badge-paper     { background: #1e3a5f; color: #93c5fd; }
+html[data-theme="dark"] .badge-measured  { background: #14432a; color: #86efac; }
+html[data-theme="dark"] .badge-derived   { background: #4a3510; color: #fcd34d; }
+html[data-theme="dark"] .badge-inference { background: #3b2160; color: #d8b4fe; }
+html[data-theme="dark"] .badge-proposal  { background: #4c1d1d; color: #fca5a5; }
+
+/* mermaid */
+.mermaid-wrap {
+  overflow-x: auto; margin: 1.4em 0; padding: 18px;
+  background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); text-align: center;
+}
+
+/* back to top */
+#topBtn {
+  position: fixed; right: 22px; bottom: 22px; width: 42px; height: 42px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--bg-card);
+  color: var(--ink); cursor: pointer; font-size: 1.1rem; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease;
+}
+#topBtn.show { opacity: 1; pointer-events: auto; }
+#topBtn:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+footer {
+  border-top: 1px solid var(--line); padding: 26px; text-align: center;
+  color: var(--ink-faint); font-size: .8rem;
+}
+footer a { color: var(--accent-ink); text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<header class="site-header">
+  <a class="home" href="index.html"><span class="dot">🌧️</span> ARG Docs</a>
+  <nav class="doc-nav"><a href="deep_research_analysis.html" class="">🔬 Deep Research Analysis</a><a href="research_paper_analysis.html" class="">📚 Research Paper Analysis</a><a href="project_handbook.html" class="">📖 Project Handbook</a><a href="progress.html" class="active">📈 Progress</a><a href="roadmap.html" class="">🗺️ Roadmap</a></nav>
+  <button id="themeBtn" title="Toggle theme">🌙</button>
+</header>
+<div class="hero"><div class="hero-inner">
+  <div class="emoji">📈</div>
+  <h1>Project Progress — Acoustic Rain Gauge ML</h1>
+  <p class="tagline">Stage-by-stage build log: what was tried, what was measured, what comes next.</p>
+  <div class="meta-chips"><span class="chip">📝 3,539 words</span><span class="chip">⏱️ ~16 min read</span><span class="chip">📄 source: PROGRESS.md</span></div>
+</div></div>
+<div class="layout">
+  <aside class="sidebar"><h4>On this page</h4><div class="toc">
+<ul>
+<li><a href="#-past-work-stages-1-6--summary">✅ Past Work (Stages 1-6) — Summary</a></li>
+<li><a href="#-current-stage--stage-7-deep-learning-ablation-mfcc--cnnlstmtransformer">🔄 Current Stage — Stage 7: Deep Learning Ablation (MFCC × CNN/LSTM/Transformer)</a><ul>
+<li><a href="#whats-built-all-done">What's built (all done)</a></li>
+<li><a href="#pilot-ablation--complete--2026-07-03">Pilot ablation — COMPLETE ✅ (2026-07-03)</a></li>
+<li><a href="#decision-point-open-awaiting-go-ahead">Decision point (open, awaiting go-ahead)</a></li>
+<li><a href="#full-scale-training--complete-with-an-unresolved-finding-">Full-scale training — COMPLETE, with an unresolved finding ⚠️</a></li>
+</ul>
+</li>
+<li><a href="#-stage-8--master-feature-store--shap-selection--complete-2026-07-07">✅ Stage 8 — Master Feature Store &amp; SHAP Selection — COMPLETE (2026-07-07)</a><ul>
+<li><a href="#whats-built">What's built</a></li>
+<li><a href="#bugs-caught-while-integrating-the-originally-proposed-script">Bugs caught while integrating the originally-proposed script</a></li>
+<li><a href="#eta--measured-against-real-audio-2026-07-04">ETA — measured against real audio (2026-07-04)</a></li>
+<li><a href="#new-cli-overrides-added-for-the-multi-pc--hdd-migration-workflow">New CLI overrides (added for the multi-PC / HDD-migration workflow)</a></li>
+<li><a href="#full-scale-extraction--complete-2026-07-07-run-on-ubuntu-i9-13900k-8-workers">Full-scale extraction — COMPLETE (2026-07-07, run on Ubuntu i9-13900K, 8 workers)</a></li>
+<li><a href="#shap-feature-selection--complete-per-target-2026-07-07">SHAP feature selection — COMPLETE, per-target (2026-07-07)</a></li>
+<li><a href="#follow-ups-from-stage-8--resolved-since">Follow-ups from Stage 8 — resolved since</a></li>
+</ul>
+</li>
+<li><a href="#-stage-9--ensembling--stacking--complete-2026-07-14--best-result-in-the-project">✅ Stage 9 — Ensembling &amp; Stacking — COMPLETE (2026-07-14) — best result in the project</a></li>
+<li><a href="#-stage-10--automated-sweep-infrastructure--complete-2026-07-14">✅ Stage 10 — Automated Sweep Infrastructure — COMPLETE (2026-07-14)</a></li>
+<li><a href="#-stage-11--edge-hardware-bring-up--complete-2026-07-15">✅ Stage 11 — Edge Hardware Bring-Up — COMPLETE (2026-07-15)</a></li>
+<li><a href="#-next-steps">⏭️ Next Steps</a></li>
+<li><a href="#-key-facts-for-future-reference">📌 Key Facts for Future Reference</a></li>
+</ul>
+</div>
+</aside>
+  <main class="article"><h1 id="project-progress--acoustic-rain-gauge-ml">Project Progress — Acoustic Rain Gauge ML<a class="headerlink" href="#project-progress--acoustic-rain-gauge-ml" title="Permanent link">¶</a></h1>
+<p><em>Last updated: 2026-07-16</em></p>
+<p>This file tracks where the project stands: what's done, what's in progress, and what's next. For full technical detail on the stage-by-stage history, see <a href="../../README.md#-roadmap">README.md</a>.</p>
+<p><strong>Current state:</strong> classifier AUC-ROC <strong>0.887</strong>; regressor <strong>R² = 0.5429</strong> (learned stacking ensemble, Stage 9). Edge firmware (ESP32-S3 + INMP441) built and streaming. Stages 1-11 complete.</p>
+<p><strong>Active work:</strong> Phase A of the <a href="roadmap.html">Roadmap</a> — cheap, high-information experiments that need no new data. See <a href="#-next-steps">Next Steps</a> below.</p>
+<p><strong>Research grounding:</strong> <a href="deep_research_analysis.html">DEEP_RESEARCH_ANALYSIS.md</a> (hidden inferences, physics, ranked directions) · <a href="roadmap.html">ROADMAP.md</a> · <a href="research_paper_analysis.html">RESEARCH_PAPER_ANALYSIS.md</a> (172-paper library).</p>
+<hr />
+<h2 id="-past-work-stages-1-6--summary">✅ Past Work (Stages 1-6) — Summary<a class="headerlink" href="#-past-work-stages-1-6--summary" title="Permanent link">¶</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Deliverable</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Data Cleaning</strong></td>
+<td><code>src/data_cleaning.py</code> — discover/timestamp/align/extract, resume-safe</td>
+<td>780,725 clips processed, ~4h22m CPU pipeline</td>
+</tr>
+<tr>
+<td><strong>2. EDA</strong></td>
+<td><code>notebooks/eda.ipynb</code></td>
+<td>Surfaced duration confound (short clips in early campaigns)</td>
+</tr>
+<tr>
+<td><strong>3. Feature Engineering</strong></td>
+<td><code>src/feature_extraction.py</code></td>
+<td>Dropped confounded clips + 204-row sensor-artifact outliers (rainfall_mm≈655mm); per-campaign chronological split (fixed 8.9%/39.4% rainy-rate mismatch → 15.1%/14.6%)</td>
+</tr>
+<tr>
+<td><strong>4. Model Training</strong></td>
+<td><code>src/train_model.py</code></td>
+<td>XGBoost classifier: <strong>AUC-ROC 0.883</strong>; XGBoost regressor: <strong>R²=0.155</strong> (weak — scalar MFCC means lose temporal structure)</td>
+</tr>
+<tr>
+<td><strong>5. Evaluation</strong></td>
+<td><code>src/evaluate_model.py</code></td>
+<td>Threshold tuning (0.5→0.78) lifted precision 0.46→0.70; light HP search improved AUC to <strong>0.893</strong>; false positives are loud non-rain sounds</td>
+</tr>
+<tr>
+<td><strong>6. Real-Time Inference</strong></td>
+<td><code>src/predict.py</code></td>
+<td>End-to-end single-clip scoring at tuned threshold, OOD flagging for non-10-15s clips</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Core problem motivating Stage 7:</strong> the Stage 4 regressor (R²=0.155) is weak because XGBoost was fed <em>time-averaged</em> MFCC means — a single scalar per coefficient — discarding all temporal structure within a 10s clip. The SARID paper (reference implementation, <code>external_repos/SARID/</code>, gitignored) solves the same audio→rainfall problem with <strong>R²=0.765</strong> by feeding the full 2D MFCC time-series into a CNN/LSTM/Transformer.</p>
+<hr />
+<h2 id="-current-stage--stage-7-deep-learning-ablation-mfcc--cnnlstmtransformer">🔄 Current Stage — Stage 7: Deep Learning Ablation (MFCC × CNN/LSTM/Transformer)<a class="headerlink" href="#-current-stage--stage-7-deep-learning-ablation-mfcc--cnnlstmtransformer" title="Permanent link">¶</a></h2>
+<p><strong>Goal:</strong> Replicate SARID's feature×architecture ablation on our data to see if sequence models recover the temporal structure XGBoost throws away, before committing to a multi-hour full-scale run.</p>
+<h3 id="whats-built-all-done">What's built (all done)<a class="headerlink" href="#whats-built-all-done" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong><code>src/dl_dataset.py</code></strong> — <code>WaveformDataset</code> (raw waveform + target via <code>soundfile</code>) + <code>MFCCExtractor</code> (GPU-batched <code>torchaudio.transforms.MFCC</code>, per-clip peak-normalized) + <code>precompute_mfcc()</code> (reads every clip once in DataFrame order, caches MFCC tensor in memory — avoids the measured 55ms/file random-read penalty on the source HDD vs 7.6ms/file sequential).</li>
+<li><strong><code>src/dl_models.py</code></strong> — <code>CNNRegressor</code>, <code>LSTMRegressor</code>, <code>TransformerRegressor</code>, reimplemented cleanly from the SARID paper's Section 3.2 description (their actual code has unfilled template placeholders and shape bugs, so it wasn't reusable as-is). All take MFCC input <code>(B, 40, 157)</code> → scalar <code>rainfall_mm</code>.</li>
+<li><strong><code>src/train_dl_model.py</code></strong> — training loop (<code>SmoothL1Loss</code>, Adam), pilot mode (40k/10k random subset) vs full mode (607k/152k), per-epoch timing + R²/RMSE/MAE, best-checkpoint saving, JSON report output.</li>
+<li><strong>Windows fix:</strong> <code>DataLoader(num_workers=0)</code> auto-detected on Windows (multiprocessing spawn requires a <code>__main__</code> guard that doesn't fit this pipeline's structure) — confirmed via <code>src/diagnose_dl.py</code> step-by-step diagnostic.</li>
+</ul>
+<h3 id="pilot-ablation--complete--2026-07-03">Pilot ablation — COMPLETE ✅ (2026-07-03)<a class="headerlink" href="#pilot-ablation--complete--2026-07-03" title="Permanent link">¶</a></h3>
+<p>Trained on a fixed-seed 40,000-row train / 10,000-row test subsample, 20 epochs each, MFCC precomputed once and cached (43.3 min train + 9.6 min test, one-time cost per run).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Best R²</th>
+<th>RMSE</th>
+<th>MAE</th>
+<th>Epoch time</th>
+<th>vs. Stage 4 baseline (R²=0.155)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Transformer</strong></td>
+<td><strong>0.3469</strong></td>
+<td>0.3257</td>
+<td>0.1184</td>
+<td>~15s/epoch</td>
+<td><strong>2.24× better</strong></td>
+</tr>
+<tr>
+<td>CNN</td>
+<td>0.3173</td>
+<td>0.3330</td>
+<td>0.1233</td>
+<td>~8.5s/epoch</td>
+<td>2.05× better</td>
+</tr>
+<tr>
+<td>LSTM</td>
+<td>0.2705</td>
+<td>0.3443</td>
+<td>0.1296</td>
+<td>~7-12s/epoch</td>
+<td>1.74× better</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Total pilot wall time: 12.0 min</strong> (training only; precomputation ~53 min happened once, not repeated per model).</p>
+<p><strong>Conclusion:</strong> All three architectures beat the XGBoost baseline substantially, confirming the hypothesis — temporal structure matters. Transformer is the current best performer. Artifacts saved:
+- <code>models/dl_cnn_mfcc.pt</code>, <code>models/dl_lstm_mfcc.pt</code>, <code>models/dl_transformer_mfcc.pt</code>
+- <code>docs/dl_ablation_pilot_report.json</code> (full per-epoch history)</p>
+<h3 id="decision-point-open-awaiting-go-ahead">Decision point (open, awaiting go-ahead)<a class="headerlink" href="#decision-point-open-awaiting-go-ahead" title="Permanent link">¶</a></h3>
+<p>Full-scale training on the full 607,673-row train set was estimated at <strong>~9-10 hours</strong> (6.5h train MFCC precompute + 2.5h test precompute + 0.5-1h training, one-time I/O cost since source audio is on a mechanical HDD). Not yet started — a mid-scale run (~150k rows, ~2-3h) was proposed as a cheaper way to check whether R² keeps improving with more data before committing to the full 10-hour run.</p>
+<hr />
+<h3 id="full-scale-training--complete-with-an-unresolved-finding-">Full-scale training — COMPLETE, with an unresolved finding ⚠️<a class="headerlink" href="#full-scale-training--complete-with-an-unresolved-finding-" title="Permanent link">¶</a></h3>
+<p>Full-scale runs (607,673 rows) were executed across the Stage 10 sweep. <strong>Every architecture performed worse at full scale than at its own 40k pilot</strong> — the opposite of the expected trend:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Pilot R² (40k)</th>
+<th>Full-scale best R² (607k)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CNN</td>
+<td>0.317</td>
+<td>0.306 → 0.095 by epoch 40 (declined)</td>
+</tr>
+<tr>
+<td>Transformer</td>
+<td>0.347</td>
+<td>0.111 (epoch 7) → −0.108 by epoch 40 (declined)</td>
+</tr>
+</tbody>
+</table></div>
+<p>A learning-rate schedule was added as a partial fix; <code>diagnose_dl_stability.py</code> measured that lower-LR/larger-batch is more <em>stable</em> (lower epoch-to-epoch variance) but did <strong>not</strong> resolve the underlying problem. <strong>This remains open</strong> — see the new hypothesis in Next Steps below.</p>
+<hr />
+<h2 id="-stage-8--master-feature-store--shap-selection--complete-2026-07-07">✅ Stage 8 — Master Feature Store &amp; SHAP Selection — COMPLETE (2026-07-07)<a class="headerlink" href="#-stage-8--master-feature-store--shap-selection--complete-2026-07-07" title="Permanent link">¶</a></h2>
+<p><strong>Goal:</strong> Give the XGBoost regressor (R²=0.155 baseline) a much richer, hand-crafted feature set as a cheaper alternative/complement to the Stage 7 DL path — 175 features across 7 families (time-domain/Teager, spectral incl. flux, MFCC, dense mel-band stats, wavelet, histogram-packet rhythm, onset/tempo), computed in parallel and written to chunked Parquet, then narrowed down via SHAP.</p>
+<h3 id="whats-built">What's built<a class="headerlink" href="#whats-built" title="Permanent link">¶</a></h3>
+<ul>
+<li><strong><code>src/master_feature_extraction.py</code></strong> — supersedes <code>src/advanced_feature_extraction.py</code> (63 features); this is a superset, so run one or the other, not both.</li>
+<li><strong><code>src/feature_selection.py</code></strong> — XGBoost + <code>shap.TreeExplainer</code>, ranks all 175 features by mean |SHAP value|, keeps top-N, saves <code>optimized_rain_dataset.parquet</code> + a full importance CSV.</li>
+</ul>
+<h3 id="bugs-caught-while-integrating-the-originally-proposed-script">Bugs caught while integrating the originally-proposed script<a class="headerlink" href="#bugs-caught-while-integrating-the-originally-proposed-script" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>Wasteful resampling</strong>: the draft config loaded every clip at 16kHz, forcing librosa to upsample from the true native 8kHz (confirmed in Stage 7). Upsampling fabricates no information above the real 4kHz Nyquist limit and measured ~22ms/clip of pure overhead. Fixed: <code>TARGET_SR = 8000</code>.</li>
+<li><strong><code>spectral_contrast</code> crashes at 8kHz</strong>: its default band edges (<code>fmin=200, n_bands=6</code>) reach 25,600 Hz — past Nyquist at both 8kHz <em>and</em> 16kHz, but only raises <code>librosa.util.exceptions.ParameterError</code> at the lower rate in practice. Fixed: <code>n_bands=3</code> when <code>sr &lt;= 8000</code>.</li>
+<li><strong>Scan loop ignored <code>--limit</code> until after the fact</strong> (caught 2026-07-04, first real run against real audio): the dataset scan called <code>path.exists()</code> for all ~780,744 rows across every CSV <em>before</em> slicing to <code>--limit</code>, so a "2000-clip smoke test" actually did a full-dataset filesystem scan first — on the mechanical HDD this made the smoke test take as long as the full run. Fixed: the scan loop now stops as soon as it's collected <code>limit</code> valid tasks.</li>
+<li><strong><code>NUM_WORKERS = cpu_count()-2</code> (18 on this machine) crashed under real memory pressure</strong>: with only ~1.9GB free RAM (other apps using the rest of 16GB), spawning 18 worker processes — each importing numpy/scipy/librosa (~200-400MB per worker) — caused several workers to fail with <code>ImportError: DLL load failed... The paging file is too small</code>. 2/5 clips silently failed in the first real test. Fixed: default lowered to <code>min(6, cpu_count()-2)</code>; added <code>--workers</code> override for machines with more free RAM.</li>
+<li><strong>Audio path portability</strong>: <code>audio_full_path</code> in the CSVs is an absolute path baked in at Stage 1 time (e.g. <code>F:\arg_dataset_unzip\...</code>). If the HDD mounts under a different drive letter on another PC, every lookup would silently fail (the script just skips missing files). Fixed: <code>resolve_audio_path()</code> anchors on the <code>arg_dataset_unzip</code> folder name and remaps to wherever <code>--audio-root</code> (or the auto-detected script's own drive) actually is, plus a loud <code>WARNING</code> if &gt;0% of checked files are missing.</li>
+</ol>
+<h3 id="eta--measured-against-real-audio-2026-07-04">ETA — measured against real audio (2026-07-04)<a class="headerlink" href="#eta--measured-against-real-audio-2026-07-04" title="Permanent link">¶</a></h3>
+<p>First real end-to-end run (previous numbers below were from a synthetic clip benchmark, since the source HDD wasn't connected at integration time):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>2000-clip smoke test, 6 workers</strong></td>
+<td>2000/2000 succeeded, 0 nulls, <strong>31.6ms/clip</strong> (62s total)</td>
+</tr>
+<tr>
+<td><strong>Full 780,725 clips, extrapolated at 6 workers</strong></td>
+<td><strong>~6.9 hours</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>This supersedes the earlier "~1-2h with 18 workers" estimate — that assumed 18 parallel workers, which we now know crashes on this machine under real memory pressure (see bug #4 above). 6 workers is the safe default; raise via <code>--workers</code> only on a machine with confirmed free RAM (~0.5GB/worker).</p>
+<p>Original synthetic-clip benchmark, kept for reference:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Feature compute</th>
+<th>+ I/O (seq. HDD)</th>
+<th>+ I/O (random HDD, worst case)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>At 8kHz (fixed)</td>
+<td>~30ms/clip</td>
+<td>~38ms/clip</td>
+<td>~85ms/clip</td>
+</tr>
+<tr>
+<td>At 16kHz (original draft)</td>
+<td>~59ms/clip</td>
+<td>~67ms/clip</td>
+<td>~114ms/clip</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Output size</strong>: ~1.5-3GB of Parquet (measured via a representative synthetic write), comfortably inside the ~30GB free on the dataset drive at time of writing.</li>
+</ul>
+<h3 id="new-cli-overrides-added-for-the-multi-pc--hdd-migration-workflow">New CLI overrides (added for the multi-PC / HDD-migration workflow)<a class="headerlink" href="#new-cli-overrides-added-for-the-multi-pc--hdd-migration-workflow" title="Permanent link">¶</a></h3>
+<p><code>master_feature_extraction.py</code> and <code>feature_selection.py</code> now accept <code>--data-dir</code>, <code>--output-dir</code>, <code>--audio-root</code>, <code>--workers</code> (extraction) and <code>--store-dir</code>, <code>--output-path</code> (selection). All default to auto-detecting the drive the script itself is running from, so the same code works whether the project lives on <code>D:</code>, <code>F:</code>, or any other letter a plugged-in HDD gets assigned.</p>
+<p>An automated wrapper — <code>docs/NEW_PC_SETUP/RUN_EXTRACTION.ps1</code> — chains <code>pip install</code> → smoke test → validate output is non-empty → full run, aborting with a clear message at any failure point instead of silently proceeding.</p>
+<h3 id="full-scale-extraction--complete-2026-07-07-run-on-ubuntu-i9-13900k-8-workers">Full-scale extraction — COMPLETE (2026-07-07, run on Ubuntu i9-13900K, 8 workers)<a class="headerlink" href="#full-scale-extraction--complete-2026-07-07-run-on-ubuntu-i9-13900k-8-workers" title="Permanent link">¶</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Clips processed</strong></td>
+<td>780,725 (780,713 after 12 unreadable/short clips dropped)</td>
+</tr>
+<tr>
+<td><strong>Wall time</strong></td>
+<td><strong>4.34 hours</strong> (20.0ms/clip — faster than the 31.6ms/clip Windows-based estimate)</td>
+</tr>
+<tr>
+<td><strong>Output</strong></td>
+<td>157 chunked Parquet files, ~0.77GB total, <code>master_feature_store/</code></td>
+</tr>
+<tr>
+<td><strong>Known data quirk</strong></td>
+<td>16,556 rows in <code>December_2024_rain_data</code> are byte-identical duplicates (upstream CSV duplication, harmless — dropped via <code>drop_duplicates</code> before any join)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="shap-feature-selection--complete-per-target-2026-07-07">SHAP feature selection — COMPLETE, per-target (2026-07-07)<a class="headerlink" href="#shap-feature-selection--complete-per-target-2026-07-07" title="Permanent link">¶</a></h3>
+<p>Initial run ranked all 175 features against <code>rainfall_mm</code> only and reused that ranking for both models — this <strong>hurt classifier AUC</strong> (0.842 vs 0.883 baseline) because the top regression-ranked features aren't the best rain/no-rain discriminators. Fixed by adding <code>--target {rainfall_mm, is_rainy}</code> to <code>feature_selection.py</code>, so the classifier and regressor now each get their own top-30 SHAP-ranked feature set:</p>
+<ul>
+<li>Regression-ranked top features: dominated by dense mel-band means (<code>mel_band_8_mean</code>, <code>mel_band_7_mean</code>, ...), wavelet variance, spectral flux.</li>
+<li>Classification-ranked top features: also mel-band-dominated but a different subset (<code>mel_band_27_mean</code>, <code>mel_band_36_mean</code>, ...) plus <code>mfcc_3_mean</code>, <code>fd_spectral_contrast_mean</code>.</li>
+</ul>
+<p>Evaluated via new <strong><code>src/train_optimized_model.py</code></strong>, which joins the master store's features onto <code>data/processed/train.csv</code>/<code>test.csv</code> (Stage 3's already-filtered, already-split population) rather than trusting <code>optimized_rain_dataset.parquet</code> as a standalone train/test source — this keeps the comparison to the Stage 4 baseline apples-to-apples (same 607,673/151,927 row split, same filters).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Metric</th>
+<th>Stage 4 baseline (13 features)</th>
+<th>Stage 8 optimized (30 SHAP features, per-target)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Classifier</td>
+<td>AUC-ROC</td>
+<td>0.883</td>
+<td><strong>0.887</strong></td>
+</tr>
+<tr>
+<td>Regressor</td>
+<td>R²</td>
+<td>0.155</td>
+<td><strong>0.226</strong> (+46% relative)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Regressor improvement is substantial; classifier improvement is modest but real (already-strong baseline, less headroom). Artifacts:
+- <code>F:\optimized_rain_dataset.parquet</code> / <code>..._is_rainy.parquet</code> — top-30 feature sets + target
+- <code>F:\feature_importance_shap.csv</code> / <code>..._is_rainy.csv</code> — full 175-feature SHAP rankings per target
+- <code>docs/model_evaluation_report_optimized.json</code> — final metrics + exact feature lists used</p>
+<h3 id="follow-ups-from-stage-8--resolved-since">Follow-ups from Stage 8 — resolved since<a class="headerlink" href="#follow-ups-from-stage-8--resolved-since" title="Permanent link">¶</a></h3>
+<ul>
+<li>~~Hurdle-model variant not yet tried~~ → <strong>tried, and it lost</strong> (see Stage 9).</li>
+<li>~~No fusion yet with Stage 7's DL embeddings~~ → <strong>done, and it's the project's best result</strong> (see Stage 9).</li>
+<li>Still open: not merged into <code>train_model.py</code>/<code>predict.py</code> as the default feature source (still a standalone comparison script). <code>train_optimized_model.py</code> also never persists its trained models to disk, which forces <code>ensemble_predict.py</code> to retrain them from scratch — noted in its own code comments.</li>
+</ul>
+<hr />
+<h2 id="-stage-9--ensembling--stacking--complete-2026-07-14--best-result-in-the-project">✅ Stage 9 — Ensembling &amp; Stacking — COMPLETE (2026-07-14) — <strong>best result in the project</strong><a class="headerlink" href="#-stage-9--ensembling--stacking--complete-2026-07-14--best-result-in-the-project" title="Permanent link">¶</a></h2>
+<p><strong>Goal:</strong> the four model families each plateau around R² 0.22-0.28 individually. If they make <em>partially independent</em> errors, combining them should beat any one of them.</p>
+<p>They do. Results on the identical 607,673/151,927 split (<a href="../reports/ensemble_cnn_xgb_report.json"><code>reports/ensemble_cnn_xgb_report.json</code></a>, <a href="../reports/ensemble_stack_report.json"><code>reports/ensemble_stack_report.json</code></a>):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>R²</th>
+<th>RMSE</th>
+<th>MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CNN alone</td>
+<td>0.277</td>
+<td>0.319</td>
+<td>0.107</td>
+</tr>
+<tr>
+<td>LSTM alone</td>
+<td>0.219</td>
+<td>0.331</td>
+<td>0.092</td>
+</tr>
+<tr>
+<td>Transformer alone</td>
+<td>0.268</td>
+<td>0.321</td>
+<td>0.075</td>
+</tr>
+<tr>
+<td>XGBoost alone</td>
+<td>0.226</td>
+<td>0.330</td>
+<td>0.104</td>
+</tr>
+<tr>
+<td>Simple 50/50 average</td>
+<td>0.314</td>
+<td>0.311</td>
+<td>0.103</td>
+</tr>
+<tr>
+<td>Best weighted blend (w_cnn=0.6)</td>
+<td>0.316</td>
+<td>0.310</td>
+<td>0.103</td>
+</tr>
+<tr>
+<td><strong>Learned XGBoost stacking meta-model</strong></td>
+<td><strong>0.5429</strong></td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p>Winner: <code>stack_5feat_tuned_refreshed</code> — a 5-feature XGBoost meta-model over the base models' predictions (<code>max_depth=5</code>, <code>n_estimators=300</code>, <code>lr=0.02</code>, <code>subsample=0.7</code>), 5-fold CV, then refreshed via the Stage 10 input-subset sweep.</p>
+<p><strong>Hurdle model — tried twice, lost twice:</strong> hard-gate R² <strong>−0.097</strong>, soft-gate <strong>0.076</strong>, vs 0.226 for a single always-on regressor. A hard-gate variant on the stacked features reached 0.412 — still below the plain soft stack.</p>
+<blockquote>
+<p>⚠️ <strong>Important caveat on how to read that result.</strong> It refutes gating on <strong>rain/no-rain</strong> specifically. It does <em>not</em> refute mixture-of-experts in general. Per Lee &amp; Zawadzki (2005), the gate that matters physically is rain <strong>regime</strong> (convective/stratiform/DSD-family) — a rain/no-rain gate adds classifier errors without reducing the DSD variance that actually causes the error floor, so it multiplies error without buying anything. See <a href="deep_research_analysis.html#23-the-dsd-ceiling--why-a-single-regression-function-cannot-win">DEEP_RESEARCH_ANALYSIS.md §2.3</a>. The stack's unusually large gain over its base models is arguably evidence that it's <em>already</em> doing implicit regime-conditioning — which suggests making it explicit should help further.</p>
+</blockquote>
+<hr />
+<h2 id="-stage-10--automated-sweep-infrastructure--complete-2026-07-14">✅ Stage 10 — Automated Sweep Infrastructure — COMPLETE (2026-07-14)<a class="headerlink" href="#-stage-10--automated-sweep-infrastructure--complete-2026-07-14" title="Permanent link">¶</a></h2>
+<p><strong><code>src/training/run_sweep.py</code></strong> — a resume-safe, failure-tolerant orchestrator for unattended overnight experiment batches: 59 experiments across three phases (DL hyperparameter grid × XGBoost configs × ensemble input-subset search). Results stream incrementally to <a href="../reports/sweep_progress.json"><code>reports/sweep_progress.json</code></a>, so a crash mid-run costs one experiment rather than the night. A new production ensemble is promoted <strong>only</strong> if it measurably beats the deployed one — which is how the current R² = 0.5429 stacker was found.</p>
+<p>Per-configuration DL logs live in <code>docs/sweep_log_{model}_lr{lr}_bs{bs}.txt</code> and <code>docs/reports/dl_ablation_full_report_*.json</code> (18 configs: 3 architectures × 3 learning rates × 2 batch sizes).</p>
+<hr />
+<h2 id="-stage-11--edge-hardware-bring-up--complete-2026-07-15">✅ Stage 11 — Edge Hardware Bring-Up — COMPLETE (2026-07-15)<a class="headerlink" href="#-stage-11--edge-hardware-bring-up--complete-2026-07-15" title="Permanent link">¶</a></h2>
+<p><strong><code>firmware/xiao_esp32s3_inmp441_test/</code></strong> — PlatformIO project migrating acoustic sensing from the original analog electret + LM393 module to a <strong>Seeed XIAO ESP32-S3 + INMP441 I2S MEMS mic</strong>: wiring/bring-up, WAV capture over serial, live Wi-Fi audio streaming to the trained ensemble, and <code>MODE_DUAL_COMPARE</code> / <code>MODE_DUAL_LEVEL_METER</code> for validating the sensor swap side-by-side before retiring the analog module.</p>
+<p><strong>Why the digital mic matters beyond convenience:</strong> the INMP441 has a stable, reproducible absolute sensitivity (−26 dBFS ±1 dB) across units. Since rainfall amount is encoded largely in <strong>absolute acoustic level</strong> (the same reason per-clip peak normalization was removed in Stage 7), unit-to-unit gain consistency is a <em>correctness</em> requirement — an analog module's gain variation would masquerade as rainfall variation across deployments.</p>
+<p>GPIO choice (7/8/9) deliberately avoids every boot-strapping pin and the native-USB pins, so serial monitoring and reflashing always stay usable, leaving D0–D7 free for a tipping-bucket reed switch, SD card, or status LED.</p>
+<hr />
+<h2 id="-next-steps">⏭️ Next Steps<a class="headerlink" href="#-next-steps" title="Permanent link">¶</a></h2>
+<p>Full plan: <a href="roadmap.html">ROADMAP.md</a>. Rationale and ranked scoring: <a href="deep_research_analysis.html">DEEP_RESEARCH_ANALYSIS.md</a>.</p>
+<p><strong>Phase A — cheap, high-information, no new data required.</strong> These come first because two of them may change what metric the project should be optimizing at all.</p>
+<ol>
+<li><strong>Integration-time scaling analysis</strong> (~1 day, no retraining). Our R² is measured per <strong>10-second clip</strong> against a <strong>0.2 mm-per-tip</strong> bucket. At 2 mm/h that's one tip every ~6 minutes, so roughly <strong>97% of light-rain clips carry a label that reflects where the tip boundary fell</strong> — not the rain during those 10 seconds. That's label quantization noise, and no model can fit it because it isn't a function of the audio. Xavier et al. (2024) got R² 0.62 → <strong>0.85+</strong> from the same model purely by aggregating to hourly; Joss &amp; Waldvogel (1969) and Lee &amp; Zawadzki (2005) both derive why. We have <code>timestamp</code> on every row: group the <em>existing</em> test-set predictions by campaign, resample to 1/5/15 min and 1/3 h, plot R² vs integration time. Either outcome is informative and publishable.</li>
+<li><strong>Leave-one-campaign-out CV</strong> (compute only). Train on 18 campaigns, test on the 19th, rotate. Every published result in this field is single-site; <strong>nobody else has the data to measure cross-deployment generalization.</strong> Note the concern this tests: our top <em>regression</em> features (mel bands 7-8 ≈ 400-572 Hz) sit in exactly the band Xavier et al. <strong>rejected as overfitting-prone</strong>, choosing a wider, lower-correlating band specifically to buy site-transferability. Per-campaign chronological splitting protects against <em>temporal</em> leakage but not against <em>surface/site</em> non-transferability.</li>
+<li><strong>Physics-band features</strong> (~1 day). Add integrated Welch-PSD scalars over 0–797 Hz and 1641–2719 Hz (<code>nperseg=1024</code>) — the two windows Xavier's frequency sweep found, which independently match our own SHAP-top bands.</li>
+<li><strong>Spectral kurtosis + modulation spectrum</strong> (~2 days). Separates impulsive rain from stationary wind <em>within the same band</em> — no energy feature can do this. Absent from the entire 172-paper library. Targets our documented dominant false-positive mode (loud non-rain sounds).</li>
+<li><strong>Per-campaign dry-ambient calibration</strong> (~1 day). We have 666,310 dry clips as a free per-campaign ambient reference. Following Ma &amp; Nystuen's self-calibration, normalize per campaign against dry-clip ambient rather than per clip against its own peak — removes cross-campaign mic/gain/mounting differences without touching within-campaign amplitude, which is the signal.</li>
+</ol>
+<p><strong>Phase B — new structure and comparisons.</strong></p>
+<ol start="6">
+<li><strong>Run our pipeline on the public SARID dataset.</strong> Calibrates our 0.5429 against their 0.765/0.787 on <em>their</em> data. If we score near theirs, our field-data number becomes quantified evidence that field conditions are harder — turning an apparent shortfall into the actual contribution. If we don't, we've found a real deficiency cheaply.</li>
+<li><strong>Regime-conditioned mixture-of-experts</strong> — see the Stage 9 caveat above.</li>
+<li><strong>Resolve the DL degradation with a new hypothesis.</strong> Current explanation is a learning-rate/step-count mismatch, and the LR schedule only partially fixed it. <strong>Alternative worth testing:</strong> the pilot is a random 40k subsample <strong>across all campaigns</strong> (IID-shuffled), while the full run is 607k rows with <strong>per-campaign chronological structure</strong> and campaigns ranging from ~9% to ~93% rainy. Those are not the same distribution — the pilot is a <em>balanced, decorrelated</em> view and the full run is a <em>clustered, heteroscedastic</em> one. If so it isn't an optimizer bug at all; more data made the problem harder by bringing campaign distribution shift with it. Two cheap diagnostics settle it: (a) shuffled vs chronological 607k pass; (b) 40k from a single campaign vs 40k across all.</li>
+</ol>
+<p><strong>Phase C — blocked on new data. Start the unblock now.</strong></p>
+<ol start="9">
+<li><strong>Put an anemometer on the next campaign.</strong> We record <strong>zero</strong> wind data. Six papers in the library say that's a problem (Kochendorfer 2017: unshielded gauges catch &lt;50% above 5 m/s, and wind+temperature alone corrects bias −27%→−4%; Pensieri 2015: 4 m/s erases drizzle's acoustic signature; Habib 1999: the correction must be applied at ~1-min resolution or it <em>overestimates</em> the bias). This is data collection, not modeling, and it gates the two highest-ceiling ideas in the analysis (wind-corrected labels; wind estimated from the same audio).</li>
+</ol>
+<blockquote>
+<p><strong>On why wind features haven't obviously helped anyone:</strong> Monti &amp; Ntalampiras found that <em>naively concatenating</em> meteorological parameters did <strong>not</strong> improve performance. That isn't a contradiction of the six papers above — it means wind enters <strong>multiplicatively, not additively</strong>. Wind doesn't add to the rainfall signal; it modulates the transfer function between rainfall and sound <em>and</em> corrupts the label via gauge undercatch. Concatenating wind as feature #176 asks the model to learn an interaction from a main effect. Use it as a <strong>label correction</strong> or a <strong>multiplicative gate</strong> instead.</p>
+</blockquote>
+<hr />
+<h2 id="-key-facts-for-future-reference">📌 Key Facts for Future Reference<a class="headerlink" href="#-key-facts-for-future-reference" title="Permanent link">¶</a></h2>
+<ul>
+<li>Audio: 8000 Hz, mono, exactly 10.0s (80,000 samples) for the <code>10-15s</code>-duration training subset — 607,673 train / 151,927 test rows.</li>
+<li>MFCC shape per clip: <code>(40 coefficients, 157 time frames)</code>.</li>
+<li>Hardware: RTX 4060 Laptop GPU (8GB VRAM); source audio (<code>F:\arg_dataset_unzip</code>) is a mechanical HDD — sequential reads ~7.6ms/file, random reads ~55ms/file (7.3× penalty), hence the precompute-once-cache-in-memory design.</li>
+<li><code>precompute_mfcc()</code> must re-run per training invocation (cache isn't persisted across script runs) — this is the ~53min (pilot) / ~9h (full) fixed cost before any training epoch begins.</li>
+</ul></main>
+</div>
+<footer>Acoustic Rain Gauge · generated from <a href="../PROGRESS.md">PROGRESS.md</a> · source of truth is the Markdown file</footer>
+<button id="topBtn" title="Back to top">↑</button>
+<script>
+(function () {
+  const root = document.documentElement;
+  const stored = localStorage.getItem('arg-docs-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const apply = (t) => {
+    root.setAttribute('data-theme', t);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  };
+  apply(stored || (prefersDark ? 'dark' : 'light'));
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('arg-docs-theme', next);
+    apply(next);
+    if (window.rerenderMermaid) window.rerenderMermaid(next);
+  });
+
+  const bar = document.getElementById('progress');
+  const topBtn = document.getElementById('topBtn');
+  addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    if (bar) bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    if (topBtn) topBtn.classList.toggle('show', h.scrollTop > 600);
+  }, { passive: true });
+  if (topBtn) topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // scroll-spy for the TOC
+  const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+  if (links.length) {
+    const map = new Map();
+    links.forEach(a => {
+      const el = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+      if (el) map.set(el, a);
+    });
+    let current = null;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          if (current) current.classList.remove('active');
+          current = map.get(e.target);
+          if (current) {
+            current.classList.add('active');
+            current.scrollIntoView({ block: 'nearest' });
+          }
+        }
+      });
+    }, { rootMargin: '-70px 0px -70% 0px' });
+    map.forEach((_, el) => obs.observe(el));
+  }
+})();
+</script>
+
+</body>
+</html>

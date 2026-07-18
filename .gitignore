@@ -36,7 +36,15 @@ firmware/**/.pio/
 # Wi-Fi credentials for the deployed sensor node (copy from wifi_config.h.example)
 firmware/**/include/wifi_config.h
 
-# Research papers and reference materials (large PDFs/docx/zip archives)
-ARG_Research/*.pdf
-ARG_Research/*.docx
-ARG_Research/*.zip
+# Research papers and reference materials (large PDFs/docx/zip archives),
+# including anything nested under subfolders like "research papers/"
+ARG_Research/**/*.pdf
+ARG_Research/**/*.docx
+ARG_Research/**/*.zip
+
+# Internship administrative paperwork (diary, report, template, submission
+# format) -- personal/private, not part of the ML project itself
+Internship_Daily_Diary.docx
+Internship_Report_*.docx
+Internship_Daily_Diary.pdf
+Internship_Report_*.pdf

@@ -1,8 +1,14 @@
 # Project Progress — Acoustic Rain Gauge ML
 
-_Last updated: 2026-07-07_
+_Last updated: 2026-07-16_
 
-This file tracks where the project stands: what's done, what's in progress, and what's next. For full technical detail on Stages 1-6, see [README.md](../README.md#-roadmap). This file focuses on **Stage 7 (Deep Learning Ablation)**, which is the active work.
+This file tracks where the project stands: what's done, what's in progress, and what's next. For full technical detail on the stage-by-stage history, see [README.md](../README.md#-roadmap).
+
+**Current state:** classifier AUC-ROC **0.887**; regressor **R² = 0.5429** (learned stacking ensemble, Stage 9). Edge firmware (ESP32-S3 + INMP441) built and streaming. Stages 1-11 complete.
+
+**Active work:** Phase A of the [Roadmap](ROADMAP.md) — cheap, high-information experiments that need no new data. See [Next Steps](#-next-steps) below.
+
+**Research grounding:** [DEEP_RESEARCH_ANALYSIS.md](DEEP_RESEARCH_ANALYSIS.md) (hidden inferences, physics, ranked directions) · [ROADMAP.md](ROADMAP.md) · [RESEARCH_PAPER_ANALYSIS.md](RESEARCH_PAPER_ANALYSIS.md) (172-paper library).
 
 ---
 
@@ -53,13 +59,16 @@ Full-scale training on the full 607,673-row train set was estimated at **~9-10 h
 
 ---
 
-## ⏭️ Next Steps
+### Full-scale training — COMPLETE, with an unresolved finding ⚠️
 
-1. **Decide pilot → scale-up path**: run mid-scale (150k, ~2-3h) to check R² trend, or commit directly to full-scale (607k, ~9-10h) on the Transformer architecture.
-2. **Full-scale training** (once triggered): 30-50 epochs with early stopping on validation R² plateau, Transformer only (pilot winner).
-3. **Evaluate & document**: compare full-scale R²/RMSE/MAE against Stage 4 baseline and SARID's reported 0.765; save comparison report to `docs/`.
-4. **Update README**: add Stage 7 to the roadmap table with final numbers; fix the "sample rate unconfirmed" note (confirmed: 8kHz, mono, 10.0s exactly, verified in this stage's investigation).
-5. **Optional**: wire the winning DL model into `src/predict.py` as an alternative regressor to the XGBoost one.
+Full-scale runs (607,673 rows) were executed across the Stage 10 sweep. **Every architecture performed worse at full scale than at its own 40k pilot** — the opposite of the expected trend:
+
+| Model | Pilot R² (40k) | Full-scale best R² (607k) |
+|---|---|---|
+| CNN | 0.317 | 0.306 → 0.095 by epoch 40 (declined) |
+| Transformer | 0.347 | 0.111 (epoch 7) → −0.108 by epoch 40 (declined) |
+
+A learning-rate schedule was added as a partial fix; `diagnose_dl_stability.py` measured that lower-LR/larger-batch is more *stable* (lower epoch-to-epoch variance) but did **not** resolve the underlying problem. **This remains open** — see the new hypothesis in Next Steps below.
 
 ---
 
@@ -130,10 +139,79 @@ Regressor improvement is substantial; classifier improvement is modest but real 
 - `F:\feature_importance_shap.csv` / `..._is_rainy.csv` — full 175-feature SHAP rankings per target
 - `docs/model_evaluation_report_optimized.json` — final metrics + exact feature lists used
 
-### Not yet done
-- Not yet merged into `train_model.py`/`predict.py` as the default feature source (still a standalone comparison script).
-- Hurdle-model variant (regressor trained only on rainy samples, not all 780k rows incl. ~85% zeros) not yet tried — likely the next lever on the regression side.
-- No fusion yet with Stage 7's DL embeddings (pilot R²=0.3469, still the single biggest lever available).
+### Follow-ups from Stage 8 — resolved since
+
+- ~~Hurdle-model variant not yet tried~~ → **tried, and it lost** (see Stage 9).
+- ~~No fusion yet with Stage 7's DL embeddings~~ → **done, and it's the project's best result** (see Stage 9).
+- Still open: not merged into `train_model.py`/`predict.py` as the default feature source (still a standalone comparison script). `train_optimized_model.py` also never persists its trained models to disk, which forces `ensemble_predict.py` to retrain them from scratch — noted in its own code comments.
+
+---
+
+## ✅ Stage 9 — Ensembling & Stacking — COMPLETE (2026-07-14) — **best result in the project**
+
+**Goal:** the four model families each plateau around R² 0.22-0.28 individually. If they make *partially independent* errors, combining them should beat any one of them.
+
+They do. Results on the identical 607,673/151,927 split ([`reports/ensemble_cnn_xgb_report.json`](reports/ensemble_cnn_xgb_report.json), [`reports/ensemble_stack_report.json`](reports/ensemble_stack_report.json)):
+
+| Configuration | R² | RMSE | MAE |
+|---|---|---|---|
+| CNN alone | 0.277 | 0.319 | 0.107 |
+| LSTM alone | 0.219 | 0.331 | 0.092 |
+| Transformer alone | 0.268 | 0.321 | 0.075 |
+| XGBoost alone | 0.226 | 0.330 | 0.104 |
+| Simple 50/50 average | 0.314 | 0.311 | 0.103 |
+| Best weighted blend (w_cnn=0.6) | 0.316 | 0.310 | 0.103 |
+| **Learned XGBoost stacking meta-model** | **0.5429** | — | — |
+
+Winner: `stack_5feat_tuned_refreshed` — a 5-feature XGBoost meta-model over the base models' predictions (`max_depth=5`, `n_estimators=300`, `lr=0.02`, `subsample=0.7`), 5-fold CV, then refreshed via the Stage 10 input-subset sweep.
+
+**Hurdle model — tried twice, lost twice:** hard-gate R² **−0.097**, soft-gate **0.076**, vs 0.226 for a single always-on regressor. A hard-gate variant on the stacked features reached 0.412 — still below the plain soft stack.
+
+> ⚠️ **Important caveat on how to read that result.** It refutes gating on **rain/no-rain** specifically. It does *not* refute mixture-of-experts in general. Per Lee & Zawadzki (2005), the gate that matters physically is rain **regime** (convective/stratiform/DSD-family) — a rain/no-rain gate adds classifier errors without reducing the DSD variance that actually causes the error floor, so it multiplies error without buying anything. See [DEEP_RESEARCH_ANALYSIS.md §2.3](DEEP_RESEARCH_ANALYSIS.md#23-the-dsd-ceiling--why-a-single-regression-function-cannot-win). The stack's unusually large gain over its base models is arguably evidence that it's *already* doing implicit regime-conditioning — which suggests making it explicit should help further.
+
+---
+
+## ✅ Stage 10 — Automated Sweep Infrastructure — COMPLETE (2026-07-14)
+
+**`src/training/run_sweep.py`** — a resume-safe, failure-tolerant orchestrator for unattended overnight experiment batches: 59 experiments across three phases (DL hyperparameter grid × XGBoost configs × ensemble input-subset search). Results stream incrementally to [`reports/sweep_progress.json`](reports/sweep_progress.json), so a crash mid-run costs one experiment rather than the night. A new production ensemble is promoted **only** if it measurably beats the deployed one — which is how the current R² = 0.5429 stacker was found.
+
+Per-configuration DL logs live in `docs/sweep_log_{model}_lr{lr}_bs{bs}.txt` and `docs/reports/dl_ablation_full_report_*.json` (18 configs: 3 architectures × 3 learning rates × 2 batch sizes).
+
+---
+
+## ✅ Stage 11 — Edge Hardware Bring-Up — COMPLETE (2026-07-15)
+
+**`firmware/xiao_esp32s3_inmp441_test/`** — PlatformIO project migrating acoustic sensing from the original analog electret + LM393 module to a **Seeed XIAO ESP32-S3 + INMP441 I2S MEMS mic**: wiring/bring-up, WAV capture over serial, live Wi-Fi audio streaming to the trained ensemble, and `MODE_DUAL_COMPARE` / `MODE_DUAL_LEVEL_METER` for validating the sensor swap side-by-side before retiring the analog module.
+
+**Why the digital mic matters beyond convenience:** the INMP441 has a stable, reproducible absolute sensitivity (−26 dBFS ±1 dB) across units. Since rainfall amount is encoded largely in **absolute acoustic level** (the same reason per-clip peak normalization was removed in Stage 7), unit-to-unit gain consistency is a *correctness* requirement — an analog module's gain variation would masquerade as rainfall variation across deployments.
+
+GPIO choice (7/8/9) deliberately avoids every boot-strapping pin and the native-USB pins, so serial monitoring and reflashing always stay usable, leaving D0–D7 free for a tipping-bucket reed switch, SD card, or status LED.
+
+---
+
+## ⏭️ Next Steps
+
+Full plan: [ROADMAP.md](ROADMAP.md). Rationale and ranked scoring: [DEEP_RESEARCH_ANALYSIS.md](DEEP_RESEARCH_ANALYSIS.md).
+
+**Phase A — cheap, high-information, no new data required.** These come first because two of them may change what metric the project should be optimizing at all.
+
+1. **Integration-time scaling analysis** (~1 day, no retraining). Our R² is measured per **10-second clip** against a **0.2 mm-per-tip** bucket. At 2 mm/h that's one tip every ~6 minutes, so roughly **97% of light-rain clips carry a label that reflects where the tip boundary fell** — not the rain during those 10 seconds. That's label quantization noise, and no model can fit it because it isn't a function of the audio. Xavier et al. (2024) got R² 0.62 → **0.85+** from the same model purely by aggregating to hourly; Joss & Waldvogel (1969) and Lee & Zawadzki (2005) both derive why. We have `timestamp` on every row: group the *existing* test-set predictions by campaign, resample to 1/5/15 min and 1/3 h, plot R² vs integration time. Either outcome is informative and publishable.
+2. **Leave-one-campaign-out CV** (compute only). Train on 18 campaigns, test on the 19th, rotate. Every published result in this field is single-site; **nobody else has the data to measure cross-deployment generalization.** Note the concern this tests: our top *regression* features (mel bands 7-8 ≈ 400-572 Hz) sit in exactly the band Xavier et al. **rejected as overfitting-prone**, choosing a wider, lower-correlating band specifically to buy site-transferability. Per-campaign chronological splitting protects against *temporal* leakage but not against *surface/site* non-transferability.
+3. **Physics-band features** (~1 day). Add integrated Welch-PSD scalars over 0–797 Hz and 1641–2719 Hz (`nperseg=1024`) — the two windows Xavier's frequency sweep found, which independently match our own SHAP-top bands.
+4. **Spectral kurtosis + modulation spectrum** (~2 days). Separates impulsive rain from stationary wind *within the same band* — no energy feature can do this. Absent from the entire 172-paper library. Targets our documented dominant false-positive mode (loud non-rain sounds).
+5. **Per-campaign dry-ambient calibration** (~1 day). We have 666,310 dry clips as a free per-campaign ambient reference. Following Ma & Nystuen's self-calibration, normalize per campaign against dry-clip ambient rather than per clip against its own peak — removes cross-campaign mic/gain/mounting differences without touching within-campaign amplitude, which is the signal.
+
+**Phase B — new structure and comparisons.**
+
+6. **Run our pipeline on the public SARID dataset.** Calibrates our 0.5429 against their 0.765/0.787 on *their* data. If we score near theirs, our field-data number becomes quantified evidence that field conditions are harder — turning an apparent shortfall into the actual contribution. If we don't, we've found a real deficiency cheaply.
+7. **Regime-conditioned mixture-of-experts** — see the Stage 9 caveat above.
+8. **Resolve the DL degradation with a new hypothesis.** Current explanation is a learning-rate/step-count mismatch, and the LR schedule only partially fixed it. **Alternative worth testing:** the pilot is a random 40k subsample **across all campaigns** (IID-shuffled), while the full run is 607k rows with **per-campaign chronological structure** and campaigns ranging from ~9% to ~93% rainy. Those are not the same distribution — the pilot is a *balanced, decorrelated* view and the full run is a *clustered, heteroscedastic* one. If so it isn't an optimizer bug at all; more data made the problem harder by bringing campaign distribution shift with it. Two cheap diagnostics settle it: (a) shuffled vs chronological 607k pass; (b) 40k from a single campaign vs 40k across all.
+
+**Phase C — blocked on new data. Start the unblock now.**
+
+9. **Put an anemometer on the next campaign.** We record **zero** wind data. Six papers in the library say that's a problem (Kochendorfer 2017: unshielded gauges catch <50% above 5 m/s, and wind+temperature alone corrects bias −27%→−4%; Pensieri 2015: 4 m/s erases drizzle's acoustic signature; Habib 1999: the correction must be applied at ~1-min resolution or it *overestimates* the bias). This is data collection, not modeling, and it gates the two highest-ceiling ideas in the analysis (wind-corrected labels; wind estimated from the same audio).
+
+> **On why wind features haven't obviously helped anyone:** Monti & Ntalampiras found that *naively concatenating* meteorological parameters did **not** improve performance. That isn't a contradiction of the six papers above — it means wind enters **multiplicatively, not additively**. Wind doesn't add to the rainfall signal; it modulates the transfer function between rainfall and sound *and* corrupts the label via gauge undercatch. Concatenating wind as feature #176 asks the model to learn an interaction from a main effect. Use it as a **label correction** or a **multiplicative gate** instead.
 
 ---
 
